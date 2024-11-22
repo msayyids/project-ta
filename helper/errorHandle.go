@@ -24,7 +24,6 @@ func ErrorHandler(writer http.ResponseWriter, request *http.Request, err interfa
 		return
 	}
 
-	// Default to internal server error if no other errors match
 	internalServerError(writer, request, err)
 }
 
@@ -43,8 +42,10 @@ func validationErrors(writer http.ResponseWriter, request *http.Request, err int
 
 		ResponseBody(writer, webResponse)
 		return true
+	} else {
+		return false
 	}
-	return false
+
 }
 
 func notFoundError(writer http.ResponseWriter, request *http.Request, err interface{}) bool {
@@ -61,8 +62,10 @@ func notFoundError(writer http.ResponseWriter, request *http.Request, err interf
 
 		ResponseBody(writer, webResponse)
 		return true
+	} else {
+		return false
 	}
-	return false
+
 }
 
 func internalServerError(writer http.ResponseWriter, request *http.Request, err interface{}) {

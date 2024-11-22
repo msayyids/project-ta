@@ -6,6 +6,8 @@ import (
 	"project-ta/entity"
 	"project-ta/helper"
 	"project-ta/service"
+
+	"github.com/julienschmidt/httprouter"
 )
 
 type contextKeyAdmin string
@@ -17,20 +19,16 @@ type AdminContext struct {
 	Role string
 }
 
-type AuthAdmininj interface {
-	AuthAdmin(next http.Handler) http.Handler
-}
-
 type AuthenticationAdmin struct {
 	UserService service.UserServiceInj
 }
 
-func NewAuthUser(us service.UserServiceInj) AuthenticationAdmin {
+func NewAuthAdmin(us service.UserServiceInj) AuthenticationAdmin {
 	return AuthenticationAdmin{UserService: us}
 }
 
-func (a AuthenticationUser) AuthAdmin(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func (a AuthenticationAdmin) AuthAdmin(next httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		token := r.Header.Get("token")
 		if token == "" {
 			helper.ResponseBody(w, entity.WebResponse{
@@ -73,10 +71,10 @@ func (a AuthenticationUser) AuthAdmin(next http.Handler) http.Handler {
 			return
 		}
 
-		adminCtx := UserContext{ID: id, Role: role}
+		adminCtx := KaryawanContext{ID: id, Role: role}
 		ctxAuth := context.WithValue(r.Context(), adminKey, adminCtx)
 		r = r.WithContext(ctxAuth)
 
-		next.ServeHTTP(w, r)
-	})
+		next(w, r, ps)
+	}
 }

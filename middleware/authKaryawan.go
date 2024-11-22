@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"project-ta/entity"
 	"project-ta/helper"
@@ -9,15 +10,24 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-type AuthenticationUser struct {
+type contextKeyKaryawan string
+
+const KaryawannKey = contextKeyAdmin("karyawan")
+
+type KaryawanContext struct {
+	ID   int
+	Role string
+}
+
+type AuthenticationKaryawan struct {
 	UserService service.UserServiceInj
 }
 
-func NewAuthUser(us service.UserServiceInj) AuthenticationAdmin {
+func NewAuthKaryawan(us service.UserServiceInj) AuthenticationAdmin {
 	return AuthenticationAdmin{UserService: us}
 }
 
-func (a AuthenticationUser) AuthUser(next httprouter.Handle) httprouter.Handle {
+func (a AuthenticationAdmin) AuthKaryawan(next httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		token := r.Header.Get("token")
 		if token == "" {
@@ -40,6 +50,7 @@ func (a AuthenticationUser) AuthUser(next httprouter.Handle) httprouter.Handle {
 		}
 
 		id := int(claim["id"].(float64))
+		role := claim["role"].(string)
 
 		_, err = a.UserService.FindUSerById(r.Context(), id)
 		if err != nil {
@@ -50,5 +61,20 @@ func (a AuthenticationUser) AuthUser(next httprouter.Handle) httprouter.Handle {
 			})
 			return
 		}
+		_, err = a.UserService.FindUSerByRole(r.Context(), role)
+		if err != nil {
+			helper.ResponseBody(w, entity.WebResponse{
+				Code:   401,
+				Status: "UNAUTHORIZED",
+				Data:   nil,
+			})
+			return
+		}
+
+		adminCtx := KaryawanContext{ID: id, Role: role}
+		ctxAuth := context.WithValue(r.Context(), adminKey, adminCtx)
+		r = r.WithContext(ctxAuth)
+
+		next(w, r, ps)
 	}
 }
