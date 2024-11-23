@@ -10,11 +10,12 @@ import (
 )
 
 type AuthenticationUser struct {
-	UserService service.UserServiceInj
+	UserService    service.UserServiceInj
+	LayananService service.LayananServiceInj
 }
 
-func NewAuthUser(us service.UserServiceInj) AuthenticationAdmin {
-	return AuthenticationAdmin{UserService: us}
+func NewAuthUser(us service.UserServiceInj, ls service.LayananServiceInj) AuthenticationUser {
+	return AuthenticationUser{UserService: us, LayananService: ls}
 }
 
 func (a AuthenticationUser) AuthUser(next httprouter.Handle) httprouter.Handle {

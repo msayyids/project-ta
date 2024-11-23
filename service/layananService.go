@@ -14,6 +14,7 @@ type LayananServiceInj interface {
 	FindLayananById(ctx context.Context, id int) (entity.Layanan, error)
 	DeleteLayananById(ctx context.Context, id int) error
 	FindAllLayanan(ctx context.Context) ([]entity.Layanan, error)
+	EditLayananById(ctx context.Context, id int, layananReq entity.LayananRequest) (entity.Layanan, error)
 }
 
 type LayananService struct {

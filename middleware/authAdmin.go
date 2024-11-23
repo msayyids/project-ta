@@ -20,11 +20,12 @@ type AdminContext struct {
 }
 
 type AuthenticationAdmin struct {
-	UserService service.UserServiceInj
+	UserService    service.UserServiceInj
+	LayananService service.LayananServiceInj
 }
 
-func NewAuthAdmin(us service.UserServiceInj) AuthenticationAdmin {
-	return AuthenticationAdmin{UserService: us}
+func NewAuthAdmin(us service.UserServiceInj, ls service.LayananServiceInj) AuthenticationAdmin {
+	return AuthenticationAdmin{UserService: us, LayananService: ls}
 }
 
 func (a AuthenticationAdmin) AuthAdmin(next httprouter.Handle) httprouter.Handle {

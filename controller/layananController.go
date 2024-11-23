@@ -15,6 +15,7 @@ type LayananControllerInj interface {
 	FindLayananById(w http.ResponseWriter, r *http.Request, param httprouter.Params)
 	DeleteLayananById(w http.ResponseWriter, r *http.Request, param httprouter.Params)
 	FindAllLayanan(w http.ResponseWriter, r *http.Request, param httprouter.Params)
+	EditLayananById(w http.ResponseWriter, r *http.Request, param httprouter.Params)
 }
 
 type LayananController struct {
@@ -127,4 +128,37 @@ func (lc LayananController) FindAllLayanan(w http.ResponseWriter, r *http.Reques
 
 	helper.ResponseBody(w, allLayanan)
 
+}
+
+func (lc LayananController) EditLayananById(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
+	idParam := param.ByName("id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		helper.ResponseBody(w, entity.WebResponse{
+			Code:   404,
+			Status: "NOT FOUND",
+			Data:   nil,
+		})
+		return
+	}
+
+	layananRequest := entity.LayananRequest{}
+	helper.RequestBody(r, layananRequest)
+
+	editedLayanan, err := lc.Ls.EditLayananById(r.Context(), id, layananRequest)
+	if err != nil {
+		helper.ResponseBody(w, entity.WebResponse{
+			Code:   404,
+			Status: "NOT FOUND",
+			Data:   nil,
+		})
+	}
+
+	response := entity.WebResponse{
+		Code:   200,
+		Status: "OK",
+		Data:   editedLayanan,
+	}
+
+	helper.ResponseBody(w, response)
 }

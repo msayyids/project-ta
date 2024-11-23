@@ -20,11 +20,12 @@ type KaryawanContext struct {
 }
 
 type AuthenticationKaryawan struct {
-	UserService service.UserServiceInj
+	UserService    service.UserServiceInj
+	LayananService service.LayananServiceInj
 }
 
-func NewAuthKaryawan(us service.UserServiceInj) AuthenticationAdmin {
-	return AuthenticationAdmin{UserService: us}
+func NewAuthKaryawan(us service.UserServiceInj, ls service.LayananServiceInj) AuthenticationAdmin {
+	return AuthenticationAdmin{UserService: us, LayananService: ls}
 }
 
 func (a AuthenticationAdmin) AuthKaryawan(next httprouter.Handle) httprouter.Handle {
