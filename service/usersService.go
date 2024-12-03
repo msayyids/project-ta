@@ -11,9 +11,12 @@ import (
 
 type UserServiceInj interface {
 	CreateUser(ctx context.Context, userReq entity.UserRequest) (entity.Users, error)
-	FindUSerByemail(ctx context.Context, email string) (entity.Users, error)
-	FindUSerById(ctx context.Context, id int) (entity.Users, error)
-	FindUSerByRole(ctx context.Context, role string) (entity.Users, error)
+	FindUserByEmail(ctx context.Context, email string) (entity.Users, error)
+	FindUserById(ctx context.Context, id int) (entity.Users, error)
+	FindUserByRole(ctx context.Context, role string) (entity.Users, error)
+	DeleteUser(ctx context.Context, id int) error
+	EditUser(ctx context.Context, id int, userReq entity.UserRequest) (entity.Users, error)
+	FindAllUsers(ctx context.Context) ([]entity.Users, error)
 }
 
 type UserServices struct {
@@ -24,24 +27,23 @@ type UserServices struct {
 func NewUserService(ur repository.UserRepositoryInj, db *sqlx.DB) UserServiceInj {
 	return UserServices{
 		DB:       db,
-		UserRepo: ur}
+		UserRepo: ur,
+	}
 }
 
 func (s UserServices) CreateUser(ctx context.Context, userReq entity.UserRequest) (entity.Users, error) {
 	tx, err := s.DB.Beginx()
-	// helper.PanicIfError(err)
-	if err != nil {
-		return entity.Users{}, err
-	}
-	defer helper.CommitOrRollback(tx)
-
-	newUsers, err := s.UserRepo.AddUser(ctx, userReq, *tx)
 	helper.PanicIfError(err)
 
-	return newUsers, nil
+	defer helper.CommitOrRollback(tx)
+
+	newUser, err := s.UserRepo.AddUser(ctx, userReq, *tx)
+	helper.PanicIfError(err)
+
+	return newUser, nil
 }
 
-func (s UserServices) FindUSerByemail(ctx context.Context, email string) (entity.Users, error) {
+func (s UserServices) FindUserByEmail(ctx context.Context, email string) (entity.Users, error) {
 	tx, err := s.DB.Beginx()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
@@ -52,7 +54,7 @@ func (s UserServices) FindUSerByemail(ctx context.Context, email string) (entity
 	return foundUser, nil
 }
 
-func (s UserServices) FindUSerByRole(ctx context.Context, role string) (entity.Users, error) {
+func (s UserServices) FindUserByRole(ctx context.Context, role string) (entity.Users, error) {
 	tx, err := s.DB.Beginx()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
@@ -63,7 +65,7 @@ func (s UserServices) FindUSerByRole(ctx context.Context, role string) (entity.U
 	return foundUser, nil
 }
 
-func (s UserServices) FindUSerById(ctx context.Context, id int) (entity.Users, error) {
+func (s UserServices) FindUserById(ctx context.Context, id int) (entity.Users, error) {
 	tx, err := s.DB.Beginx()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
@@ -72,4 +74,37 @@ func (s UserServices) FindUSerById(ctx context.Context, id int) (entity.Users, e
 	helper.PanicIfError(err)
 
 	return foundUser, nil
+}
+
+func (s UserServices) DeleteUser(ctx context.Context, id int) error {
+	tx, err := s.DB.Beginx()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	err = s.UserRepo.DeleteUser(ctx, id, *tx)
+	helper.PanicIfError(err)
+
+	return nil
+}
+
+func (s UserServices) EditUser(ctx context.Context, id int, userReq entity.UserRequest) (entity.Users, error) {
+	tx, err := s.DB.Beginx()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	updatedUser, err := s.UserRepo.EditUser(ctx, id, userReq, *tx)
+	helper.PanicIfError(err)
+
+	return updatedUser, nil
+}
+
+func (s UserServices) FindAllUsers(ctx context.Context) ([]entity.Users, error) {
+	tx, err := s.DB.Beginx()
+	helper.PanicIfError(err)
+	defer helper.CommitOrRollback(tx)
+
+	users, err := s.UserRepo.FindAllUsers(ctx, *tx)
+	helper.PanicIfError(err)
+
+	return users, nil
 }

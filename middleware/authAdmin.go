@@ -53,7 +53,7 @@ func (a AuthenticationAdmin) AuthAdmin(next httprouter.Handle) httprouter.Handle
 		id := int(claim["id"].(float64))
 		role := claim["role"].(string)
 
-		_, err = a.UserService.FindUSerById(r.Context(), id)
+		_, err = a.UserService.FindUserById(r.Context(), id)
 		if err != nil {
 			helper.ResponseBody(w, entity.WebResponse{
 				Code:   401,
@@ -62,7 +62,7 @@ func (a AuthenticationAdmin) AuthAdmin(next httprouter.Handle) httprouter.Handle
 			})
 			return
 		}
-		_, err = a.UserService.FindUSerByRole(r.Context(), role)
+		_, err = a.UserService.FindUserByRole(r.Context(), role)
 		if err != nil {
 			helper.ResponseBody(w, entity.WebResponse{
 				Code:   401,
