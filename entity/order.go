@@ -12,7 +12,6 @@ type Order struct {
 	Tanggal_order        time.Time `json:"tanggal_order"`
 	Total                int       `json:"total"`
 	Status               string    `json:"status"`
-	Tanggal_update       time.Time `json:"Tanggal_update"`
 }
 
 type OrderRequest struct {
@@ -24,5 +23,4 @@ type OrderRequest struct {
 	Tanggal_order        time.Time `json:"-"`
 	Total                int       `json:"total"`
 	Status               string    `json:"status"`
-	Tanggal_update       time.Time `json:"-"`
 }

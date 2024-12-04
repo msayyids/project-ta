@@ -8,8 +8,8 @@ import (
 )
 
 func SetupMidtrans() *snap.Client {
-	midtrans.ServerKey = os.Getenv("MIDTRANS_SERVER_KEY")
-	midtrans.ClientKey = os.Getenv("MIDTRANS_CLIENT_KEY")
+	serverKey := os.Getenv("MIDTRANS_SERVER_KEY")
+	midtrans.ServerKey = serverKey
 	midtrans.Environment = midtrans.Sandbox
 
 	client := snap.Client{}

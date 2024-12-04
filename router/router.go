@@ -17,6 +17,7 @@ func NewRouter() *httprouter.Router {
 
 	// Initialize database connection
 	db := config.ConnecDb()
+	midtrans := config.SetupMidtrans()
 
 	// Initialize repository, service, and controller
 	userRepo := repository.NewUserRepository()
@@ -27,12 +28,13 @@ func NewRouter() *httprouter.Router {
 	layananService := service.NewLayananService(&db, layananRepo)
 	layananController := controller.NewLayananController(layananService)
 
+	paymentService := service.NewPaymentService(*midtrans)
+	paymentController := controller.NewPaymentController(paymentService)
+
 	// middleware
 	adminMiddleware := middleware.NewAuthAdmin(userService, layananService)
 	userMiddleware := middleware.NewAuthUser(userService, layananService)
 	// karyawanMiddleware := middleware.NewAuthKaryawan(userService, layananService)
-
-	// Public Endpoints
 
 	router.POST("/api/steam/users/login", userController.Login)
 
@@ -47,6 +49,8 @@ func NewRouter() *httprouter.Router {
 	router.DELETE("/api/steam/layanan/:id", adminMiddleware.AuthAdmin(layananController.DeleteLayananById))
 	router.GET("/api/steam/layanan/:id", userMiddleware.AuthUser(layananController.FindLayananById))
 	router.PUT("/api/steam/layanan/:id", adminMiddleware.AuthAdmin(layananController.EditLayananById))
+
+	router.POST("/api/steam/payment", paymentController.CreatePayment)
 
 	// Error handling
 	router.PanicHandler = helper.ErrorHandler
