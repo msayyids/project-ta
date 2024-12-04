@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"project-ta/entity"
 	"project-ta/helper"
 	"project-ta/repository"
@@ -18,14 +19,17 @@ type OrderServiceInj interface {
 }
 
 type OrderServices struct {
-	DB        *sqlx.DB
-	OrderRepo repository.OrderRepositoryInj
+	DB          sqlx.DB
+	OrderRepo   repository.OrderRepositoryInj
+	LayananRepo repository.LayananRepositoryInj
 }
 
-func NewOrderService(or repository.OrderRepositoryInj, db *sqlx.DB) OrderServiceInj {
+func NewOrderService(or repository.OrderRepositoryInj, db sqlx.DB, lp repository.LayananRepositoryInj) OrderServiceInj {
 	return OrderServices{
-		DB:        db,
-		OrderRepo: or}
+		DB:          db,
+		OrderRepo:   or,
+		LayananRepo: lp,
+	}
 }
 
 func (s OrderServices) CreateOrder(ctx context.Context, orderReq entity.OrderRequest) (entity.Order, error) {
@@ -34,11 +38,22 @@ func (s OrderServices) CreateOrder(ctx context.Context, orderReq entity.OrderReq
 
 	defer helper.CommitOrRollback(tx)
 
-	newUsers, err := s.OrderRepo.AddOrder(ctx, orderReq, tx)
-	helper.PanicIfError(err)
+	// Ambil data layanan berdasarkan ID
+	layanan, err := s.LayananRepo.FindById(ctx, orderReq.Layanan_id, *tx)
+	if err != nil {
+		return entity.Order{}, fmt.Errorf("error dsni")
+	}
 
-	return newUsers, nil
+	// Hitung total
+	orderReq.Total = layanan.Harga * orderReq.Jumlah
 
+	// Simpan order ke database
+	newOrder, err := s.OrderRepo.AddOrder(ctx, orderReq, tx)
+	if err != nil {
+		return entity.Order{}, fmt.Errorf("error 1 not found")
+	}
+
+	return newOrder, nil
 }
 
 func (s OrderServices) EditOrderById(ctx context.Context, id int, orderReq entity.OrderRequest) (entity.Order, error) {
@@ -48,6 +63,7 @@ func (s OrderServices) EditOrderById(ctx context.Context, id int, orderReq entit
 	defer helper.CommitOrRollback(tx)
 
 	editedOrder, err := s.OrderRepo.UpdateOrderById(ctx, id, orderReq, tx)
+
 	helper.PanicIfError(err)
 
 	return editedOrder, nil
@@ -83,7 +99,9 @@ func (s OrderServices) DeleteOrder(ctx context.Context, id int) error {
 
 	defer helper.CommitOrRollback(tx)
 
-	err = s.DeleteOrder(ctx, id)
+	if err := s.DeleteOrder(ctx, id); err != nil {
+		return err
+	}
 
 	return nil
 }

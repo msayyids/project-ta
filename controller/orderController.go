@@ -36,7 +36,7 @@ func (oc OrderController) CreateOrder(w http.ResponseWriter, r *http.Request, pa
 		helper.ResponseBody(w, entity.WebResponse{
 			Code:   400,
 			Status: "bad request",
-			Data:   "invalid input",
+			Data:   fmt.Errorf("layanan not found"),
 		})
 		return
 	}

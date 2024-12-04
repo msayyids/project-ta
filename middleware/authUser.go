@@ -51,5 +51,7 @@ func (a AuthenticationUser) AuthUser(next httprouter.Handle) httprouter.Handle {
 			})
 			return
 		}
+
+		next(w, r, ps)
 	}
 }

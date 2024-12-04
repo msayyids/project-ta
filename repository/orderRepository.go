@@ -2,7 +2,9 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"project-ta/entity"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -33,23 +35,24 @@ func (o *OrderRepository) AddOrder(ctx context.Context, orderReq entity.OrderReq
         total, 
         status
     ) VALUES (
-        $1, $2, $3, $4, $5, CURRENT_TIMESTAMP, $6, $7
+        $1, $2, $3, $4, $5, $6, $7, $8
     ) RETURNING *;
-    `
+`
 
 	var newOrder entity.Order
 	err := tx.QueryRowxContext(ctx, sqlQuery,
-		orderReq.Nama_pelanggaan,
+		orderReq.Nama_pelanggan,
 		orderReq.No_Telepon_Pelanggan,
 		orderReq.Layanan_id,
 		orderReq.User_id,
 		orderReq.Jumlah,
+		time.Now(),
 		orderReq.Total,
 		orderReq.Status,
 	).StructScan(&newOrder)
 
 	if err != nil {
-		return entity.Order{}, err
+		return entity.Order{}, fmt.Errorf("error repo")
 	}
 
 	return newOrder, nil
@@ -81,36 +84,36 @@ func (o *OrderRepository) FindOrderById(ctx context.Context, id int, tx *sqlx.Tx
 
 func (o *OrderRepository) UpdateOrderById(ctx context.Context, id int, orderReq entity.OrderRequest, tx *sqlx.Tx) (entity.Order, error) {
 	sqlQuery := `
-    UPDATE orders 
-    SET 
-        nama_pelanggan = $1, 
-        no_telepon_pelanggan = $2, 
-        layanan_id = $3, 
-        user_id = $4, 
-        jumlah = $5, 
-        total = $6, 
-        status = $7
-    WHERE id = $8 
-    RETURNING *;
-    `
+    INSERT INTO orders (
+        nama_pelanggan, 
+        no_telepon_pelanggan, 
+        layanan_id, 
+        user_id, 
+        jumlah, 
+        tanggal_order, 
+        total, 
+        status
+    ) VALUES (
+        $1, $2, $3, $4, $5, CURRENT_TIMESTAMP, $6, $7
+    ) RETURNING *;
+`
 
-	var updatedOrder entity.Order
+	var newOrder entity.Order
 	err := tx.QueryRowxContext(ctx, sqlQuery,
-		orderReq.Nama_pelanggaan,
+		orderReq.Nama_pelanggan,
 		orderReq.No_Telepon_Pelanggan,
 		orderReq.Layanan_id,
 		orderReq.User_id,
 		orderReq.Jumlah,
 		orderReq.Total,
 		orderReq.Status,
-		id,
-	).StructScan(&updatedOrder)
+	).StructScan(&newOrder)
 
 	if err != nil {
 		return entity.Order{}, err
 	}
 
-	return updatedOrder, nil
+	return newOrder, nil
 }
 
 func (o *OrderRepository) DeleteOrderById(ctx context.Context, id int, tx *sqlx.Tx) error {

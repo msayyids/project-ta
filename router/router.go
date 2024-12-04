@@ -3,7 +3,6 @@ package router
 import (
 	"project-ta/config"
 	"project-ta/controller"
-	"project-ta/helper"
 	"project-ta/middleware"
 	"project-ta/repository"
 	"project-ta/service"
@@ -28,7 +27,12 @@ func NewRouter() *httprouter.Router {
 	layananService := service.NewLayananService(&db, layananRepo)
 	layananController := controller.NewLayananController(layananService)
 
-	paymentService := service.NewPaymentService(*midtrans)
+	orderRepo := repository.NewOrderRepository()
+	orderService := service.NewOrderService(orderRepo, db, layananRepo)
+	orderControllerr := controller.NewOrderController(orderService)
+
+	paymentRepo := repository.NewMidtransPaymentRepository()
+	paymentService := service.NewPaymentService(*midtrans, db, paymentRepo, orderRepo)
 	paymentController := controller.NewPaymentController(paymentService)
 
 	// middleware
@@ -50,10 +54,15 @@ func NewRouter() *httprouter.Router {
 	router.GET("/api/steam/layanan/:id", userMiddleware.AuthUser(layananController.FindLayananById))
 	router.PUT("/api/steam/layanan/:id", adminMiddleware.AuthAdmin(layananController.EditLayananById))
 
+	router.POST("/api/steam/order", userMiddleware.AuthUser(orderControllerr.CreateOrder))
+	router.GET("/api/steam/order", userMiddleware.AuthUser(orderControllerr.GetAllOrder))
+	router.GET("/api/steam/order/:id", userMiddleware.AuthUser(orderControllerr.GetOrderById))
+	router.PUT("/api/steam/order/:id", adminMiddleware.AuthAdmin(orderControllerr.EditOrder))
+	router.DELETE("/api/steam/order/:id", adminMiddleware.AuthAdmin(orderControllerr.DeleteORder))
+
 	router.POST("/api/steam/payment", paymentController.CreatePayment)
 
-	// Error handling
-	router.PanicHandler = helper.ErrorHandler
+	// router.PanicHandler = helper.ErrorHandler
 
 	return router
 }

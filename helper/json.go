@@ -12,7 +12,7 @@ func RequestBody(request *http.Request, result interface{}) {
 }
 
 func ResponseBody(w http.ResponseWriter, response interface{}) {
-	w.Header().Add("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 	err := encoder.Encode(response)
 	PanicIfError(err)

@@ -1,10 +1,10 @@
 package entity
 
 type Layanan struct {
-	Id         int    `json:"id"`
-	Nama       string `json:"nama"`
-	Desksripsi string `json:"deskripsi"`
-	Harga      int    `json:"harga"`
+	ID        int    `json:"id" db:"id"`
+	Nama      string `json:"nama" db:"nama"`
+	Deskripsi string `json:"deskripsi" db:"deskripsi"`
+	Harga     int    `json:"harga" db:"harga"`
 }
 
 type LayananRequest struct {
