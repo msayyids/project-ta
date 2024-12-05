@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"project-ta/entity"
 	"project-ta/helper"
 	"project-ta/repository"
@@ -14,7 +15,7 @@ import (
 )
 
 type PaymentServiceInj interface {
-	CreatePayment(ctx context.Context, payment entity.MidtransPaymentRequest) (entity.MidtransPayment, error)
+	CreatePayment(ctx context.Context, id int) (entity.MidtransPayment, error)
 }
 
 type paymentService struct {
@@ -33,47 +34,42 @@ func NewPaymentService(client snap.Client, db sqlx.DB, pm repository.MidtransPay
 	}
 }
 
-func (ps paymentService) CreatePayment(ctx context.Context, payment entity.MidtransPaymentRequest) (entity.MidtransPayment, error) {
-
+func (ps paymentService) CreatePayment(ctx context.Context, id int) (entity.MidtransPayment, error) {
 	tx, err := ps.DB.Beginx()
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
-	order, err := ps.OrderRepository.FindOrderById(ctx, payment.OrderID, tx)
+	order, err := ps.OrderRepository.FindOrderById(ctx, id, tx)
 	if err != nil {
-		return entity.MidtransPayment{}, err
+		// Jika order tidak ditemukan
+		return entity.MidtransPayment{}, fmt.Errorf("error retrieving order: %v", err)
 	}
 
-	payments, err := ps.PaymentRepository.AddPayment(ctx, payment, *tx)
-	if err != nil {
-		return entity.MidtransPayment{}, err
-	}
-
-	payments.SubTotal = order.Total
-
-	orderId := strconv.Itoa(payment.OrderID)
+	// Generate transaksi dengan Midtrans Snap
+	orderId := strconv.Itoa(order.Id)
 	request := &snap.Request{
 		TransactionDetails: midtrans.TransactionDetails{
 			OrderID:  orderId,
-			GrossAmt: int64(payments.SubTotal),
-		},
-		CustomerDetail: &midtrans.CustomerDetails{
-			FName: order.Nama_pelanggan,
-			Phone: order.No_Telepon_Pelanggan,
+			GrossAmt: int64(order.Total),
 		},
 	}
 
 	snapResponse, _ := ps.Client.CreateTransaction(request)
 
-	response := entity.MidtransPayment{
-		OrderID:     payment.OrderID,
+	newPayment := entity.MidtransPayment{
+		OrderID:     order.Id,
 		RedirectURL: snapResponse.RedirectURL,
-		SubTotal:    payments.SubTotal,
+		SubTotal:    order.Total,
 		PaymentDate: time.Now(),
 		Status:      "pending",
 		CreatedAt:   time.Now(),
 	}
 
-	return response, nil
+	// Simpan ke database
+	savedPayment, err := ps.PaymentRepository.AddPayment(ctx, newPayment, *tx)
+	if err != nil {
+		return entity.MidtransPayment{}, fmt.Errorf("error 3")
+	}
 
+	return savedPayment, nil
 }

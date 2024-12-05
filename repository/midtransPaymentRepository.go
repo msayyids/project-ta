@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"project-ta/entity"
 
 	"github.com/jmoiron/sqlx"
@@ -10,7 +11,7 @@ import (
 type MidtransPaymentRepository struct{}
 
 type MidtransPaymentRepositoryInj interface {
-	AddPayment(ctx context.Context, paymentRequest entity.MidtransPaymentRequest, tx sqlx.Tx) (entity.MidtransPayment, error)
+	AddPayment(ctx context.Context, payment entity.MidtransPayment, tx sqlx.Tx) (entity.MidtransPayment, error)
 	FindPayment(ctx context.Context, tx sqlx.Tx) ([]entity.MidtransPayment, error)
 	FindPaymentById(ctx context.Context, id int, tx sqlx.Tx) (entity.MidtransPayment, error)
 	EditPayment(ctx context.Context, id int, paymentRequest entity.MidtransPaymentRequest, tx sqlx.Tx) (entity.MidtransPayment, error)
@@ -21,24 +22,23 @@ func NewMidtransPaymentRepository() MidtransPaymentRepositoryInj {
 	return MidtransPaymentRepository{}
 }
 
-func (p MidtransPaymentRepository) AddPayment(ctx context.Context, paymentRequest entity.MidtransPaymentRequest, tx sqlx.Tx) (entity.MidtransPayment, error) {
-	sqlQuery := `INSERT INTO payments (order_id, redirect_url, payment_date, status, created_at)
-                 VALUES ($1, $2, $3, $4, NOW())
-                 RETURNING id, order_id, redirect_url, payment_date, status, created_at`
+func (repo MidtransPaymentRepository) AddPayment(ctx context.Context, payment entity.MidtransPayment, tx sqlx.Tx) (entity.MidtransPayment, error) {
+	query := `
+        INSERT INTO payments (order_id, redirect_url, subtotal, payment_date, status, created_at) 
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING id, order_id, redirect_url, subtotal, payment_date, status, created_at
+    `
 
-	var payment entity.MidtransPayment
-	err := tx.QueryRowxContext(ctx, sqlQuery,
-		paymentRequest.OrderID,
-		paymentRequest.RedirectURL,
-		paymentRequest.PaymentDate,
-		paymentRequest.Status,
-	).StructScan(&payment)
+	var result entity.MidtransPayment
+	err := tx.QueryRowxContext(ctx, query,
+		payment.OrderID, payment.RedirectURL, payment.SubTotal, payment.PaymentDate, payment.Status, payment.CreatedAt,
+	).StructScan(&result)
 
 	if err != nil {
-		return entity.MidtransPayment{}, err
+		return entity.MidtransPayment{}, fmt.Errorf("failed to insert payment: %v", err)
 	}
 
-	return payment, nil
+	return result, nil
 }
 
 func (p MidtransPaymentRepository) FindPayment(ctx context.Context, tx sqlx.Tx) ([]entity.MidtransPayment, error) {

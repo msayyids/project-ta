@@ -71,12 +71,18 @@ func (s OrderServices) EditOrderById(ctx context.Context, id int, orderReq entit
 
 func (s OrderServices) GetOrderById(ctx context.Context, id int) (entity.Order, error) {
 	tx, err := s.DB.Beginx()
-	helper.PanicIfError(err)
+	// helper.PanicIfError(err)
+	if err != nil {
+		return entity.Order{}, fmt.Errorf("error 1")
+	}
 
 	defer helper.CommitOrRollback(tx)
 
 	order, err := s.OrderRepo.FindOrderById(ctx, id, tx)
-	helper.PanicIfError(err)
+	// helper.PanicIfError(err)
+	if err != nil {
+		return entity.Order{}, fmt.Errorf("error 2")
+	}
 
 	return order, nil
 }
@@ -99,9 +105,7 @@ func (s OrderServices) DeleteOrder(ctx context.Context, id int) error {
 
 	defer helper.CommitOrRollback(tx)
 
-	if err := s.DeleteOrder(ctx, id); err != nil {
-		return err
-	}
+	err = s.DeleteOrder(ctx, id)
 
 	return nil
 }

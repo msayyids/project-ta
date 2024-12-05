@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"project-ta/entity"
 	"time"
@@ -71,12 +72,19 @@ func (o *OrderRepository) FindOrder(ctx context.Context, tx *sqlx.Tx) ([]entity.
 }
 
 func (o *OrderRepository) FindOrderById(ctx context.Context, id int, tx *sqlx.Tx) (entity.Order, error) {
+	if tx == nil {
+		return entity.Order{}, fmt.Errorf("transaction is nil")
+	}
+
 	sqlQuery := `SELECT * FROM orders WHERE id = $1;`
 
 	var order entity.Order
 	err := tx.GetContext(ctx, &order, sqlQuery, id)
 	if err != nil {
-		return entity.Order{}, err
+		if err == sql.ErrNoRows {
+			return entity.Order{}, fmt.Errorf("order with ID %d not found", id)
+		}
+		return entity.Order{}, fmt.Errorf("error executing query: %v", err)
 	}
 
 	return order, nil

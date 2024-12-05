@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
 	"project-ta/entity"
 	"project-ta/helper"
@@ -10,34 +11,37 @@ import (
 )
 
 type PaymentController struct {
-	S service.PaymentServiceInj
+	S  service.PaymentServiceInj
+	Os service.OrderServiceInj
 }
 
 type PaymentControllerInj interface {
 	CreatePayment(w http.ResponseWriter, r *http.Request, param httprouter.Params)
 }
 
-func NewPaymentController(s service.PaymentServiceInj) PaymentControllerInj {
+func NewPaymentController(s service.PaymentServiceInj, os service.OrderServiceInj) PaymentControllerInj {
 	return PaymentController{
-		S: s,
+		S:  s,
+		Os: os,
 	}
 }
 
 func (p PaymentController) CreatePayment(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
-	var paymentRequest entity.MidtransPaymentRequest
+	var reqId entity.ReqId
+	helper.RequestBody(r, &reqId)
 
-	helper.RequestBody(r, &paymentRequest)
-
-	payment, err := p.S.CreatePayment(r.Context(), paymentRequest)
+	// Pastikan OrderID ada di database
+	payment, err := p.S.CreatePayment(r.Context(), reqId.OrderID)
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
 			Code:   500,
 			Status: "INTERNAL SERVER ERROR",
-			Data:   err,
+			Data:   fmt.Errorf("error processing payment: %v", err),
 		})
 		return
 	}
 
+	// Berikan respon sukses
 	response := entity.WebResponse{
 		Code:   201,
 		Status: "SUCCESS CREATE PAYMENT",
