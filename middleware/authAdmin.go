@@ -53,6 +53,15 @@ func (a AuthenticationAdmin) AuthAdmin(next httprouter.Handle) httprouter.Handle
 		id := int(claim["id"].(float64))
 		role := claim["role"].(string)
 
+		if role != "admin" {
+			helper.ResponseBody(w, entity.WebResponse{
+				Code:   403,
+				Status: "FORBIDDEN",
+				Data:   "Access denied",
+			})
+			return
+		}
+
 		_, err = a.UserService.FindUserById(r.Context(), id)
 		if err != nil {
 			helper.ResponseBody(w, entity.WebResponse{

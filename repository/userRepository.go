@@ -69,9 +69,9 @@ func (ur UserRepositories) DeleteUser(ctx context.Context, id int, tx sqlx.Tx) e
 func (ur UserRepositories) EditUser(ctx context.Context, id int, userReq entity.UserRequest, tx sqlx.Tx) (entity.Users, error) {
 	sqlQuery := `
         UPDATE users 
-        SET nama_depan = $1, nama_belakang = $2, role = $3, email = $4, password = $5, 
-            no_telepon = $6, alamat = $7, gaji = $8, no_rekening = $9, bank_id = $10, updated_at = $11
-        WHERE id = $12
+        SET nama_depan = $1, nama_belakang = $2, role = $3, email = $4, 
+            no_telepon = $5, alamat = $6, gaji = $7, no_rekening = $8, bank_id = $9, created_at = $10
+        WHERE id = $11
         RETURNING *
     `
 
@@ -81,7 +81,6 @@ func (ur UserRepositories) EditUser(ctx context.Context, id int, userReq entity.
 		userReq.Nama_belakang,
 		userReq.Role,
 		userReq.Email,
-		userReq.Password,
 		userReq.No_telepon,
 		userReq.Alamat,
 		userReq.Gaji,

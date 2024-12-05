@@ -148,7 +148,7 @@ func (uc UserController) EditUser(w http.ResponseWriter, r *http.Request, param 
 	helper.RequestBody(r, &userReq)
 
 	// Update user
-	updatedUser, err := uc.S.EditUser(r.Context(), idInt, userReq)
+	_, err := uc.S.EditUser(r.Context(), idInt, userReq)
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
 			Code:   400,
@@ -162,7 +162,7 @@ func (uc UserController) EditUser(w http.ResponseWriter, r *http.Request, param 
 	helper.ResponseBody(w, entity.WebResponse{
 		Code:   200,
 		Status: "OK",
-		Data:   updatedUser,
+		Data:   "success update data user ",
 	})
 }
 

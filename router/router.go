@@ -3,7 +3,6 @@ package router
 import (
 	"project-ta/config"
 	"project-ta/controller"
-	"project-ta/helper"
 	"project-ta/middleware"
 	"project-ta/repository"
 	"project-ta/service"
@@ -36,6 +35,10 @@ func NewRouter() *httprouter.Router {
 	paymentService := service.NewPaymentService(*midtrans, db, paymentRepo, orderRepo)
 	paymentController := controller.NewPaymentController(paymentService, orderService)
 
+	pengeluaranRepo := repository.NewPengeluaranRepository()
+	pengeluranService := service.NewPengeluaranService(db, pengeluaranRepo)
+	pengeluaranController := controller.NewPengeluaranController(pengeluranService)
+
 	// middleware
 	adminMiddleware := middleware.NewAuthAdmin(userService, layananService)
 	userMiddleware := middleware.NewAuthUser(userService, layananService)
@@ -63,7 +66,13 @@ func NewRouter() *httprouter.Router {
 
 	router.POST("/api/steam/payment", paymentController.CreatePayment)
 
-	router.PanicHandler = helper.ErrorHandler
+	router.POST("/api/steam/pengeluaran", pengeluaranController.CreatePengeluaran)
+	router.GET("/api/steam/pengeluaran", pengeluaranController.GetPengeluaran)
+	router.GET("/api/steam/pengeluaran/:id", pengeluaranController.GetPengeluaranById)
+	router.PUT("/api/steam/pengeluaran/:id", pengeluaranController.UpdatePengeluaran)
+	router.DELETE("/api/steam/pengeluaran/:id", pengeluaranController.DeletePengeluaran)
+
+	// router.PanicHandler = helper.ErrorHandler
 
 	return router
 }
