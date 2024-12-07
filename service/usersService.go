@@ -32,6 +32,7 @@ func NewUserService(ur repository.UserRepositoryInj, db *sqlx.DB) UserServiceInj
 }
 
 func (s UserServices) CreateUser(ctx context.Context, userReq entity.UserRequest) (entity.Users, error) {
+
 	tx, err := s.DB.Beginx()
 	helper.PanicIfError(err)
 

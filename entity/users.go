@@ -10,8 +10,8 @@ type Users struct {
 	Nama_belakang string    `json:"nama_belakang" validate:"required,min=2,max=50"`
 	Role          string    `json:"role" validate:"required,oneof=admin karyawan"`
 	Email         string    `json:"email" validate:"required,email"`
-	Password      string    `json:"password" validate:"required,min=8"`
-	No_telepon    string    `json:"no_telepon" validate:"required,e164"`
+	Password      string    `json:"-" validate:"required,min=8"`
+	No_telepon    string    `json:"no_telepon" validate:"required"`
 	Alamat        string    `json:"alamat" validate:"required"`
 	Gaji          int       `json:"gaji" validate:"required,gte=0"`
 	No_rekening   string    `json:"no_rekening" validate:"required"`
@@ -25,7 +25,7 @@ type UserRequest struct {
 	Role          string `json:"role" validate:"required,oneof=admin karyawan"`
 	Email         string `json:"email" validate:"required,email"`
 	Password      string `json:"password" validate:"required,min=8"`
-	No_telepon    string `json:"no_telepon" validate:"required,e164"`
+	No_telepon    string `json:"no_telepon" validate:"required"`
 	Alamat        string `json:"alamat" validate:"required"`
 	Gaji          int    `json:"gaji" validate:"required,gte=0"`
 	No_rekening   string `json:"no_rekening" validate:"required"`

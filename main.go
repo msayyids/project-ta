@@ -13,6 +13,6 @@ func main() {
 	port := 8080
 
 	serverAddress := fmt.Sprintf(":%d", port)
-	log.Println("server is running")
+	log.Printf("server is running on %s", serverAddress)
 	http.ListenAndServe(serverAddress, apps)
 }

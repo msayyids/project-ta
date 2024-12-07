@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"project-ta/entity"
+	"project-ta/helper"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -26,12 +27,25 @@ func NewUserRepository() UserRepositoryInj {
 
 func (ur UserRepositories) AddUser(ctx context.Context, userReq entity.UserRequest, tx sqlx.Tx) (entity.Users, error) {
 	sqlQuery := `
-        INSERT INTO users (
-            nama_depan, nama_belakang, role, email, password, no_telepon, alamat, gaji, no_rekening, bank_id, created_at
-        ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
-        ) RETURNING *
-    `
+    INSERT INTO users (
+        nama_depan, 
+        nama_belakang, 
+        role, 
+        email, 
+        password, 
+        no_telepon, 
+        alamat, 
+        gaji, 
+        no_rekening, 
+        bank_id, 
+        created_at
+    ) 
+    VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+    ) 
+    RETURNING id, nama_depan, nama_belakang, role, email, no_telepon, alamat, gaji, no_rekening, bank_id, created_at;
+`
+
 	var newUser entity.Users
 	err := tx.QueryRowxContext(ctx, sqlQuery,
 		userReq.Nama_depan,
@@ -47,9 +61,7 @@ func (ur UserRepositories) AddUser(ctx context.Context, userReq entity.UserReque
 		time.Now(),
 	).StructScan(&newUser)
 
-	if err != nil {
-		return entity.Users{}, err
-	}
+	helper.PanicIfError(err)
 
 	return newUser, nil
 }
@@ -59,20 +71,25 @@ func (ur UserRepositories) DeleteUser(ctx context.Context, id int, tx sqlx.Tx) e
 
 	// Execute the delete query
 	_, err := tx.ExecContext(ctx, sqlQuery, id)
-	if err != nil {
-		return err
-	}
+	helper.PanicIfError(err)
 
 	return nil
 }
 
 func (ur UserRepositories) EditUser(ctx context.Context, id int, userReq entity.UserRequest, tx sqlx.Tx) (entity.Users, error) {
 	sqlQuery := `
-        UPDATE users 
-        SET nama_depan = $1, nama_belakang = $2, role = $3, email = $4, 
-            no_telepon = $5, alamat = $6, gaji = $7, no_rekening = $8, bank_id = $9, created_at = $10
+        UPDATE users SET
+            nama_depan = COALESCE(NULLIF($1, ''), nama_depan),
+            nama_belakang = COALESCE(NULLIF($2, ''), nama_belakang),
+            role = COALESCE(NULLIF($3, ''), role),
+            email = COALESCE(NULLIF($4, ''), email),
+            password = COALESCE(NULLIF($5, ''), password),
+            no_telepon = COALESCE(NULLIF($6, ''), no_telepon),
+            alamat = COALESCE(NULLIF($7, ''), alamat),
+            gaji = COALESCE(NULLIF($8, 0), gaji),
+            no_rekening = COALESCE(NULLIF($9, ''), no_rekening),
+            bank_id = COALESCE(NULLIF($10, 0), bank_id)
         WHERE id = $11
-        RETURNING *
     `
 
 	var updatedUser entity.Users
@@ -90,9 +107,7 @@ func (ur UserRepositories) EditUser(ctx context.Context, id int, userReq entity.
 		id,         // User ID for the update
 	).StructScan(&updatedUser)
 
-	if err != nil {
-		return entity.Users{}, err
-	}
+	helper.PanicIfError(err)
 
 	return updatedUser, nil
 }

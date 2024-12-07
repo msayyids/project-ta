@@ -33,20 +33,20 @@ func (a AuthenticationAdmin) AuthKaryawan(next httprouter.Handle) httprouter.Han
 		token := r.Header.Get("token")
 		if token == "" {
 			helper.ResponseBody(w, entity.WebResponse{
-				Code:   401,
-				Status: "UNAUTHORIZED",
-				Data:   nil,
-			})
+				Code:    http.StatusUnauthorized,
+				Message: "UNAUTHORIZED",
+				Data:    nil,
+			}, http.StatusUnauthorized)
 			return
 		}
 
 		claim, err := helper.ValidateToken(token)
 		if err != nil {
 			helper.ResponseBody(w, entity.WebResponse{
-				Code:   401,
-				Status: "UNAUTHORIZED",
-				Data:   nil,
-			})
+				Code:    http.StatusUnauthorized,
+				Message: "UNAUTHORIZED",
+				Data:    nil,
+			}, http.StatusUnauthorized)
 			return
 		}
 
@@ -56,19 +56,19 @@ func (a AuthenticationAdmin) AuthKaryawan(next httprouter.Handle) httprouter.Han
 		_, err = a.UserService.FindUserById(r.Context(), id)
 		if err != nil {
 			helper.ResponseBody(w, entity.WebResponse{
-				Code:   401,
-				Status: "UNAUTHORIZED",
-				Data:   nil,
-			})
+				Code:    http.StatusUnauthorized,
+				Message: "UNAUTHORIZED",
+				Data:    nil,
+			}, http.StatusUnauthorized)
 			return
 		}
 		_, err = a.UserService.FindUserByRole(r.Context(), role)
 		if err != nil {
 			helper.ResponseBody(w, entity.WebResponse{
-				Code:   401,
-				Status: "UNAUTHORIZED",
-				Data:   nil,
-			})
+				Code:    http.StatusUnauthorized,
+				Message: "UNAUTHORIZED",
+				Data:    nil,
+			}, http.StatusUnauthorized)
 			return
 		}
 

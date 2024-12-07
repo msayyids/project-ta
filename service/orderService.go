@@ -3,11 +3,13 @@ package service
 import (
 	"context"
 	"fmt"
+	"log"
 	"project-ta/entity"
 	"project-ta/helper"
 	"project-ta/repository"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/midtrans/midtrans-go/coreapi"
 )
 
 type OrderServiceInj interface {
@@ -19,13 +21,15 @@ type OrderServiceInj interface {
 }
 
 type OrderServices struct {
+	Client      coreapi.Client
 	DB          sqlx.DB
 	OrderRepo   repository.OrderRepositoryInj
 	LayananRepo repository.LayananRepositoryInj
 }
 
-func NewOrderService(or repository.OrderRepositoryInj, db sqlx.DB, lp repository.LayananRepositoryInj) OrderServiceInj {
+func NewOrderService(client coreapi.Client, or repository.OrderRepositoryInj, db sqlx.DB, lp repository.LayananRepositoryInj) OrderServiceInj {
 	return OrderServices{
+		Client:      client,
 		DB:          db,
 		OrderRepo:   or,
 		LayananRepo: lp,
@@ -38,18 +42,24 @@ func (s OrderServices) CreateOrder(ctx context.Context, orderReq entity.OrderReq
 
 	defer helper.CommitOrRollback(tx)
 
-	// Ambil data layanan berdasarkan ID
+	// Validate input
+	if orderReq.Layanan_id <= 0 || orderReq.Jumlah <= 0 {
+		log.Printf("Invalid input: %+v", orderReq)
+		return entity.Order{}, fmt.Errorf("invalid input")
+	}
+
 	layanan, err := s.LayananRepo.FindById(ctx, orderReq.Layanan_id, *tx)
 	if err != nil {
+		log.Printf("Failed to find layanan: %v", err)
 		return entity.Order{}, fmt.Errorf("error dsni")
 	}
 
-	// Hitung total
+	log.Printf("Harga layanan ditemukan: %d", layanan.Harga)
 	orderReq.Total = layanan.Harga * orderReq.Jumlah
 
-	// Simpan order ke database
 	newOrder, err := s.OrderRepo.AddOrder(ctx, orderReq, tx)
 	if err != nil {
+		log.Printf("Error adding order: %v", err)
 		return entity.Order{}, fmt.Errorf("error 1 not found")
 	}
 
@@ -106,6 +116,7 @@ func (s OrderServices) DeleteOrder(ctx context.Context, id int) error {
 	defer helper.CommitOrRollback(tx)
 
 	err = s.DeleteOrder(ctx, id)
+	helper.PanicIfError(err)
 
 	return nil
 }

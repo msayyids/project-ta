@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"project-ta/entity"
 	"project-ta/helper"
@@ -14,6 +15,14 @@ type AuthenticationUser struct {
 	LayananService service.LayananServiceInj
 }
 
+type contextKeyUser string
+
+const UserKey = contextKeyUser("users")
+
+type UserContext struct {
+	ID int
+}
+
 func NewAuthUser(us service.UserServiceInj, ls service.LayananServiceInj) AuthenticationUser {
 	return AuthenticationUser{UserService: us, LayananService: ls}
 }
@@ -23,20 +32,20 @@ func (a AuthenticationUser) AuthUser(next httprouter.Handle) httprouter.Handle {
 		token := r.Header.Get("token")
 		if token == "" {
 			helper.ResponseBody(w, entity.WebResponse{
-				Code:   401,
-				Status: "UNAUTHORIZED",
-				Data:   nil,
-			})
+				Code:    http.StatusUnauthorized,
+				Message: "UNAUTHORIZED",
+				Data:    nil,
+			}, http.StatusUnauthorized)
 			return
 		}
 
 		claim, err := helper.ValidateToken(token)
 		if err != nil {
 			helper.ResponseBody(w, entity.WebResponse{
-				Code:   401,
-				Status: "UNAUTHORIZED",
-				Data:   nil,
-			})
+				Code:    http.StatusUnauthorized,
+				Message: "UNAUTHORIZED",
+				Data:    nil,
+			}, http.StatusUnauthorized)
 			return
 		}
 
@@ -45,12 +54,15 @@ func (a AuthenticationUser) AuthUser(next httprouter.Handle) httprouter.Handle {
 		_, err = a.UserService.FindUserById(r.Context(), id)
 		if err != nil {
 			helper.ResponseBody(w, entity.WebResponse{
-				Code:   401,
-				Status: "UNAUTHORIZED",
-				Data:   nil,
-			})
+				Code:    http.StatusUnauthorized,
+				Message: "UNAUTHORIZED",
+				Data:    nil,
+			}, http.StatusUnauthorized)
 			return
 		}
+		userCtx := UserContext{ID: id}
+		ctxAuth := context.WithValue(r.Context(), UserKey, userCtx)
+		r = r.WithContext(ctxAuth)
 
 		next(w, r, ps)
 	}

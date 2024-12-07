@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"project-ta/entity"
-	"time"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -18,6 +17,7 @@ type OrderRepositoryInj interface {
 	UpdateOrderById(ctx context.Context, id int, orderReq entity.OrderRequest, tx *sqlx.Tx) (entity.Order, error)
 	DeleteOrderById(ctx context.Context, id int, tx *sqlx.Tx) error
 	FindOrder(ctx context.Context, tx *sqlx.Tx) ([]entity.Order, error)
+	// EditStatusOrder(ctx context.Context, id int, status string, tx *sqlx.Tx) (entity.Order, error)
 }
 
 func NewOrderRepository() OrderRepositoryInj {
@@ -32,9 +32,9 @@ func (o *OrderRepository) AddOrder(ctx context.Context, orderReq entity.OrderReq
         layanan_id, 
         user_id, 
         jumlah, 
-        tanggal_order, 
         total, 
-        status
+        status, 
+        payment_type
     ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8
     ) RETURNING *;
@@ -47,13 +47,13 @@ func (o *OrderRepository) AddOrder(ctx context.Context, orderReq entity.OrderReq
 		orderReq.Layanan_id,
 		orderReq.User_id,
 		orderReq.Jumlah,
-		time.Now(),
-		orderReq.Total,
-		orderReq.Status,
+		orderReq.Total,        // Ensure that 'orderReq.Total' is correctly set
+		orderReq.Status,       // Ensure 'orderReq.Status' is a valid string (e.g., 'UNPAID')
+		orderReq.Payment_type, // Ensure 'orderReq.Payment_type' is valid ('cash' or 'cashless')
 	).StructScan(&newOrder)
 
 	if err != nil {
-		return entity.Order{}, fmt.Errorf("error repo")
+		return entity.Order{}, fmt.Errorf("error adding order: %w", err)
 	}
 
 	return newOrder, nil
@@ -100,9 +100,9 @@ func (o *OrderRepository) UpdateOrderById(ctx context.Context, id int, orderReq 
         jumlah, 
         tanggal_order, 
         total, 
-        status
+        status,
     ) VALUES (
-        $1, $2, $3, $4, $5, CURRENT_TIMESTAMP, $6, $7
+        $1, $2, $3, $4, $5, CURRENT_TIMESTAMP, $6, $7,$8
     ) RETURNING *;
 `
 
@@ -134,3 +134,17 @@ func (o *OrderRepository) DeleteOrderById(ctx context.Context, id int, tx *sqlx.
 
 	return nil
 }
+
+// func (o *OrderRepository) EditStatusOrder(ctx context.Context, id int, status string, tx *sqlx.Tx) (entity.Order, error) {
+
+// 	var updateorder entity.Order
+// 	query := `UPDATE orders SET status = $1 WHERE id = $2`
+
+// 	err := tx.QueryRowxContext(ctx, query, status, id).StructScan(&updateorder)
+// 	if err != nil {
+
+// 		return entity.Order{}, fmt.Errorf("failed to update order status: %w", err)
+// 	}
+
+// 	return updateorder, nil
+// }

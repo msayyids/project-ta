@@ -14,8 +14,10 @@ type MidtransPaymentRepositoryInj interface {
 	AddPayment(ctx context.Context, payment entity.MidtransPayment, tx sqlx.Tx) (entity.MidtransPayment, error)
 	FindPayment(ctx context.Context, tx sqlx.Tx) ([]entity.MidtransPayment, error)
 	FindPaymentById(ctx context.Context, id int, tx sqlx.Tx) (entity.MidtransPayment, error)
-	EditPayment(ctx context.Context, id int, paymentRequest entity.MidtransPaymentRequest, tx sqlx.Tx) (entity.MidtransPayment, error)
+	EditPayment(ctx context.Context, id int, tx sqlx.Tx) (entity.MidtransPayment, error)
 	DeletePayment(ctx context.Context, id int, tx sqlx.Tx) error
+	EditStatusPayment(ctx context.Context, id int, status string, tx sqlx.Tx) (entity.MidtransPayment, error)
+	EditPaymentbyOrderId(ctx context.Context, id int, status string, tx sqlx.Tx) (entity.MidtransPayment, error)
 }
 
 func NewMidtransPaymentRepository() MidtransPaymentRepositoryInj {
@@ -23,11 +25,17 @@ func NewMidtransPaymentRepository() MidtransPaymentRepositoryInj {
 }
 
 func (repo MidtransPaymentRepository) AddPayment(ctx context.Context, payment entity.MidtransPayment, tx sqlx.Tx) (entity.MidtransPayment, error) {
-	query := `
-        INSERT INTO payments (order_id, redirect_url, subtotal, payment_date, status, created_at) 
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING id, order_id, redirect_url, subtotal, payment_date, status, created_at
-    `
+	query := `WITH order_check AS (
+    SELECT payment_type
+    FROM orders
+    WHERE id = $1
+	)
+	INSERT INTO payments (order_id, redirect_url, subtotal, payment_date, status, created_at)
+	SELECT $1, $2, $3, $4, $5, $6
+	FROM order_check
+	WHERE payment_type = 'cashless'
+	RETURNING id, order_id, redirect_url, subtotal, payment_date, status, created_at;
+`
 
 	var result entity.MidtransPayment
 	err := tx.QueryRowxContext(ctx, query,
@@ -42,7 +50,7 @@ func (repo MidtransPaymentRepository) AddPayment(ctx context.Context, payment en
 }
 
 func (p MidtransPaymentRepository) FindPayment(ctx context.Context, tx sqlx.Tx) ([]entity.MidtransPayment, error) {
-	sqlQuery := `SELECT id, order_id, redirect_url, payment_date, status, created_at
+	sqlQuery := `SELECT *
                  FROM payments`
 
 	var payments []entity.MidtransPayment
@@ -55,7 +63,7 @@ func (p MidtransPaymentRepository) FindPayment(ctx context.Context, tx sqlx.Tx) 
 }
 
 func (p MidtransPaymentRepository) FindPaymentById(ctx context.Context, id int, tx sqlx.Tx) (entity.MidtransPayment, error) {
-	sqlQuery := `SELECT id, order_id, redirect_url, payment_date, status, created_at
+	sqlQuery := `SELECT *
                  FROM payments
                  WHERE id = $1`
 
@@ -68,20 +76,49 @@ func (p MidtransPaymentRepository) FindPaymentById(ctx context.Context, id int, 
 	return payment, nil
 }
 
-func (p MidtransPaymentRepository) EditPayment(ctx context.Context, id int, paymentRequest entity.MidtransPaymentRequest, tx sqlx.Tx) (entity.MidtransPayment, error) {
+//benerin
+
+func (p MidtransPaymentRepository) EditPayment(ctx context.Context, id int, tx sqlx.Tx) (entity.MidtransPayment, error) {
 	sqlQuery := `UPDATE payments
-                 SET order_id = $1, redirect_url = $2, payment_date = $3, status = $4
-                 WHERE id = $5
-                 RETURNING id, order_id, redirect_url, payment_date, status, created_at`
+				SET order_id = $1
+				WHERE id = $2
+				RETURNING id, order_id, redirect_url, payment_date, status, created_at;
+`
 
 	var payment entity.MidtransPayment
-	err := tx.QueryRowxContext(ctx, sqlQuery,
-		paymentRequest.OrderID,
-		paymentRequest.RedirectURL,
-		paymentRequest.PaymentDate,
-		paymentRequest.Status,
-		id,
-	).StructScan(&payment)
+	err := tx.QueryRowxContext(ctx, sqlQuery, id).StructScan(&payment)
+	if err != nil {
+		return entity.MidtransPayment{}, err
+	}
+
+	return payment, nil
+}
+func (p MidtransPaymentRepository) EditPaymentbyOrderId(ctx context.Context, id int, status string, tx sqlx.Tx) (entity.MidtransPayment, error) {
+	sqlQuery := `UPDATE payments
+				SET order_id = $1
+				SET status = $2
+				WHERE order_id = $1
+				RETURNING id, order_id, redirect_url, payment_date, status, created_at;
+`
+
+	var payment entity.MidtransPayment
+	err := tx.QueryRowxContext(ctx, sqlQuery, id, status).StructScan(&payment)
+	if err != nil {
+		return entity.MidtransPayment{}, err
+	}
+
+	return payment, nil
+}
+
+func (p MidtransPaymentRepository) EditStatusPayment(ctx context.Context, id int, status string, tx sqlx.Tx) (entity.MidtransPayment, error) {
+	sqlQuery := `UPDATE payments
+				SET status = $1
+				WHERE id = $2
+				RETURNING id, order_id, redirect_url, payment_date, status, created_at;
+`
+
+	var payment entity.MidtransPayment
+	err := tx.QueryRowxContext(ctx, sqlQuery, status, id).StructScan(&payment)
 	if err != nil {
 		return entity.MidtransPayment{}, err
 	}

@@ -4,7 +4,8 @@ import "log"
 
 func PanicIfError(err error) {
 	if err != nil {
-		log.Panic(err)
+		log.Printf("Error occurred: %v", err) // Tambahkan log
+		panic(err)
 
 	}
 

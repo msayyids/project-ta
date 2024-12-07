@@ -33,20 +33,20 @@ func (lc LayananController) CreateLayanan(w http.ResponseWriter, r *http.Request
 	newLayanan, err := lc.Ls.AddLayanan(r.Context(), layananRequest)
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
-			Code:   500,
-			Status: "INTERNAL SERVER ERROR",
-			Data:   "FAILED CREATE LAYANAN",
-		})
+			Code:    500,
+			Message: "INTERNAL SERVER ERROR",
+			Data:    "FAILED CREATE LAYANAN",
+		}, http.StatusInternalServerError)
 		return
 	}
 
 	response := entity.WebResponse{
-		Code:   201,
-		Status: "SUCCESS CREATE LAYANAN",
-		Data:   newLayanan,
+		Code:    201,
+		Message: "SUCCESS CREATE LAYANAN",
+		Data:    newLayanan,
 	}
 
-	helper.ResponseBody(w, response)
+	helper.ResponseBody(w, response, http.StatusCreated)
 
 }
 
@@ -55,31 +55,31 @@ func (lc LayananController) FindLayananById(w http.ResponseWriter, r *http.Reque
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
-			Code:   404,
-			Status: "NOT FOUND",
-			Data:   nil,
-		})
+			Code:    404,
+			Message: "NOT FOUND",
+			Data:    nil,
+		}, http.StatusNotFound)
 		return
 	}
 
 	layanan, err := lc.Ls.FindLayananById(r.Context(), id)
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
-			Code:   500,
-			Status: "INTERNAL SERVER ERROR",
-			Data:   nil,
-		})
+			Code:    http.StatusNotFound,
+			Message: "INTERNAL SERVER ERROR",
+			Data:    nil,
+		}, http.StatusNotFound)
 
 		return
 	}
 
 	layananByIdResponse := entity.WebResponse{
-		Code:   200,
-		Status: "OK",
-		Data:   layanan,
+		Code:    http.StatusOK,
+		Message: "OK",
+		Data:    layanan,
 	}
 
-	helper.ResponseBody(w, layananByIdResponse)
+	helper.ResponseBody(w, layananByIdResponse, http.StatusOK)
 }
 
 func (lc LayananController) DeleteLayananById(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
@@ -88,30 +88,30 @@ func (lc LayananController) DeleteLayananById(w http.ResponseWriter, r *http.Req
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
-			Code:   404,
-			Status: "NOT FOUND",
-			Data:   nil,
-		})
+			Code:    http.StatusNotFound,
+			Message: "NOT FOUND",
+			Data:    nil,
+		}, http.StatusNotFound)
 		return
 	}
 
 	err = lc.Ls.DeleteLayananById(r.Context(), id)
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
-			Code:   500,
-			Status: "INTERNAL SERVER ERROR",
-			Data:   nil,
-		})
+			Code:    http.StatusNotFound,
+			Message: "NOT FOUND",
+			Data:    nil,
+		}, http.StatusNotFound)
 		return
 	}
 
 	response := entity.WebResponse{
-		Code:   200,
-		Status: "OK",
-		Data:   "success delete layanan",
+		Code:    http.StatusOK,
+		Message: "OK",
+		Data:    "success delete layanan",
 	}
 
-	helper.ResponseBody(w, response)
+	helper.ResponseBody(w, response, http.StatusOK)
 
 }
 
@@ -119,14 +119,14 @@ func (lc LayananController) FindAllLayanan(w http.ResponseWriter, r *http.Reques
 	allLayanan, err := lc.Ls.FindAllLayanan(r.Context())
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
-			Code:   404,
-			Status: "NOT FOUND",
-			Data:   nil,
-		})
+			Code:    http.StatusNotFound,
+			Message: "NOT FOUND",
+			Data:    nil,
+		}, http.StatusNotFound)
 		return
 	}
 
-	helper.ResponseBody(w, allLayanan)
+	helper.ResponseBody(w, allLayanan, http.StatusNotFound)
 
 }
 
@@ -135,10 +135,10 @@ func (lc LayananController) EditLayananById(w http.ResponseWriter, r *http.Reque
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
-			Code:   404,
-			Status: "NOT FOUND",
-			Data:   nil,
-		})
+			Code:    404,
+			Message: "NOT FOUND",
+			Data:    nil,
+		}, http.StatusNotFound)
 		return
 	}
 
@@ -148,17 +148,17 @@ func (lc LayananController) EditLayananById(w http.ResponseWriter, r *http.Reque
 	editedLayanan, err := lc.Ls.EditLayananById(r.Context(), id, layananRequest)
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
-			Code:   404,
-			Status: "NOT FOUND",
-			Data:   nil,
-		})
+			Code:    http.StatusNotFound,
+			Message: "NOT FOUND",
+			Data:    nil,
+		}, http.StatusNotFound)
 	}
 
 	response := entity.WebResponse{
-		Code:   200,
-		Status: "OK",
-		Data:   editedLayanan,
+		Code:    http.StatusOK,
+		Message: "OK",
+		Data:    editedLayanan,
 	}
 
-	helper.ResponseBody(w, response)
+	helper.ResponseBody(w, response, http.StatusOK)
 }

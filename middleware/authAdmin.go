@@ -33,20 +33,20 @@ func (a AuthenticationAdmin) AuthAdmin(next httprouter.Handle) httprouter.Handle
 		token := r.Header.Get("token")
 		if token == "" {
 			helper.ResponseBody(w, entity.WebResponse{
-				Code:   401,
-				Status: "UNAUTHORIZED",
-				Data:   nil,
-			})
+				Code:    http.StatusUnauthorized,
+				Message: "UNAUTHORIZED",
+				Data:    nil,
+			}, http.StatusUnauthorized)
 			return
 		}
 
 		claim, err := helper.ValidateToken(token)
 		if err != nil {
 			helper.ResponseBody(w, entity.WebResponse{
-				Code:   401,
-				Status: "UNAUTHORIZED",
-				Data:   nil,
-			})
+				Code:    http.StatusUnauthorized,
+				Message: "UNAUTHORIZED",
+				Data:    nil,
+			}, http.StatusUnauthorized)
 			return
 		}
 
@@ -55,33 +55,33 @@ func (a AuthenticationAdmin) AuthAdmin(next httprouter.Handle) httprouter.Handle
 
 		if role != "admin" {
 			helper.ResponseBody(w, entity.WebResponse{
-				Code:   403,
-				Status: "FORBIDDEN",
-				Data:   "Access denied",
-			})
+				Code:    http.StatusForbidden,
+				Message: "FORBIDDEN",
+				Data:    "Access denied",
+			}, http.StatusForbidden)
 			return
 		}
 
 		_, err = a.UserService.FindUserById(r.Context(), id)
 		if err != nil {
 			helper.ResponseBody(w, entity.WebResponse{
-				Code:   401,
-				Status: "UNAUTHORIZED",
-				Data:   nil,
-			})
+				Code:    http.StatusUnauthorized,
+				Message: "UNAUTHORIZED",
+				Data:    nil,
+			}, http.StatusUnauthorized)
 			return
 		}
 		_, err = a.UserService.FindUserByRole(r.Context(), role)
 		if err != nil {
 			helper.ResponseBody(w, entity.WebResponse{
-				Code:   401,
-				Status: "UNAUTHORIZED",
-				Data:   nil,
-			})
+				Code:    http.StatusUnauthorized,
+				Message: "UNAUTHORIZED",
+				Data:    nil,
+			}, http.StatusUnauthorized)
 			return
 		}
 
-		adminCtx := KaryawanContext{ID: id, Role: role}
+		adminCtx := AdminContext{ID: id, Role: role}
 		ctxAuth := context.WithValue(r.Context(), adminKey, adminCtx)
 		r = r.WithContext(ctxAuth)
 

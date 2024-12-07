@@ -1,89 +1,78 @@
 package helper
 
 import (
+	"fmt"
 	"net/http"
 	"project-ta/entity"
-
-	"github.com/go-playground/validator/v10"
+	"runtime/debug"
 )
 
-type NotFoundError struct {
-	Error string
+func ErrorHandler(w http.ResponseWriter, statuscode int, message string) {
+	switch statuscode {
+	case http.StatusBadRequest: // 400 Bad Request
+		ResponseBody(w, entity.WebResponse{
+			Code:    http.StatusBadRequest,
+			Message: "BAD REQUEST",
+			Data:    message,
+		}, http.StatusBadRequest)
+
+	case http.StatusUnauthorized: // 401 Unauthorized
+		ResponseBody(w, entity.WebResponse{
+			Code:    http.StatusUnauthorized,
+			Message: "UNAUTHORIZED",
+			Data:    message,
+		}, http.StatusUnauthorized)
+
+	case http.StatusForbidden: // 403 Forbidden
+		ResponseBody(w, entity.WebResponse{
+			Code:    http.StatusForbidden,
+			Message: "FORBIDDEN",
+			Data:    message,
+		}, http.StatusForbidden)
+
+	case http.StatusNotFound: // 404 Not Found
+		ResponseBody(w, entity.WebResponse{
+			Code:    http.StatusNotFound,
+			Message: "NOT FOUND",
+			Data:    message,
+		}, http.StatusNotFound)
+
+	case http.StatusInternalServerError: // 500 Internal Server Error
+		ResponseBody(w, entity.WebResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "INTERNAL SERVER ERROR",
+			Data:    message,
+		}, http.StatusInternalServerError)
+
+	case http.StatusBadGateway: // 502 Bad Gateway
+		ResponseBody(w, entity.WebResponse{
+			Code:    http.StatusBadGateway,
+			Message: "BAD GATEWAY",
+			Data:    message,
+		}, http.StatusBadGateway)
+
+	case http.StatusServiceUnavailable: // 503 Service Unavailable
+		ResponseBody(w, entity.WebResponse{
+			Code:    http.StatusServiceUnavailable,
+			Message: "SERVICE UNAVAILABLE",
+			Data:    message,
+		}, http.StatusServiceUnavailable)
+
+	default: // Jika status code tidak terduga, gunakan internal server error
+		ResponseBody(w, entity.WebResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "INTERNAL SERVER ERROR",
+			Data:    fmt.Sprintf("An unexpected error occurred: %s", message),
+		}, http.StatusInternalServerError)
+	}
 }
 
-func NewAnotherError(error string) NotFoundError {
-	return NotFoundError{Error: error}
-}
+// PanicHandlerWrapper adalah wrapper untuk menangani panic dan memanggil ErrorHandler
+func PanicHandlerWrapper(w http.ResponseWriter, r *http.Request, err interface{}) {
+	// Cetak stack trace untuk tujuan debug
+	fmt.Printf("PANIC: %v\n", err)
+	fmt.Printf("Stack Trace:\n%s\n", debug.Stack())
 
-func ErrorHandler(writer http.ResponseWriter, request *http.Request, err interface{}) {
-
-	if notFoundError(writer, request, err) {
-		return
-	}
-	if validationErrors(writer, request, err) {
-		return
-	}
-
-	internalServerError(writer, request, err)
-}
-
-// Handler for validation errors
-func validationErrors(writer http.ResponseWriter, request *http.Request, err interface{}) bool {
-	exception, ok := err.(validator.ValidationErrors)
-	if ok {
-		writer.Header().Set("Content-Type", "application/json")
-		writer.WriteHeader(http.StatusBadRequest)
-
-		webResponse := entity.WebResponse{
-			Code:   http.StatusBadRequest,
-			Status: "BAD REQUEST",
-			Data:   exception.Error(),
-		}
-
-		ResponseBody(writer, webResponse)
-		return true
-	} else {
-		return false
-	}
-
-}
-
-func notFoundError(writer http.ResponseWriter, request *http.Request, err interface{}) bool {
-	exception, ok := err.(NotFoundError)
-	if ok {
-		writer.Header().Set("Content-Type", "application/json")
-		writer.WriteHeader(http.StatusNotFound)
-
-		webResponse := entity.WebResponse{
-			Code:   http.StatusNotFound,
-			Status: "NOT FOUND",
-			Data:   exception.Error,
-		}
-
-		ResponseBody(writer, webResponse)
-		return true
-	} else {
-		return false
-	}
-
-}
-
-func internalServerError(writer http.ResponseWriter, request *http.Request, err interface{}) {
-	writer.Header().Set("Content-Type", "application/json")
-	writer.WriteHeader(http.StatusInternalServerError)
-
-	var errorString string
-	if e, ok := err.(error); ok {
-		errorString = e.Error()
-	} else {
-		errorString = "An unexpected error occurred"
-	}
-
-	webResponse := entity.WebResponse{
-		Code:   http.StatusInternalServerError,
-		Status: "INTERNAL SERVER ERROR",
-		Data:   errorString,
-	}
-
-	ResponseBody(writer, webResponse)
+	// Panggil ErrorHandler dengan status InternalServerError dan pesan error
+	ErrorHandler(w, http.StatusInternalServerError, fmt.Sprintf("An unexpected error occurred: %v", err))
 }

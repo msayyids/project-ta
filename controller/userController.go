@@ -8,6 +8,7 @@ import (
 	"project-ta/service"
 	"strconv"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/julienschmidt/httprouter"
 )
@@ -31,31 +32,39 @@ func NewUserController(s service.UserServiceInj) UserControllerInj {
 
 func (uc UserController) CreateUsers(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
 	newUser := entity.UserRequest{}
+	validate := validator.New()
+
+	if err := validate.Struct(newUser); err != nil {
+		helper.ResponseBody(w, entity.WebResponse{
+			Code:    http.StatusBadRequest,
+			Message: "BAD REQUEST",
+			Data:    "INVALID INPUT",
+		}, http.StatusBadRequest)
+		return
+	}
 	helper.RequestBody(r, &newUser)
 
-	// Hash the password
 	hashedPassword := helper.HashPassword(newUser.Password)
 	newUser.Password = hashedPassword
 
-	// Create the new user
 	newUserResponse, err := uc.S.CreateUser(r.Context(), newUser)
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
-			Code:   500,
-			Status: "Internal Server Error",
-			Data:   "Failed to create user",
-		})
+			Code:    http.StatusInternalServerError,
+			Message: "INTERNAL SERVER ERROR",
+			Data:    "Email not registered",
+		}, http.StatusInternalServerError)
 		return
 	}
 
 	// Success response
 	response := entity.WebResponse{
-		Code:   200,
-		Status: "OK",
-		Data:   fmt.Sprintf("Welcome %s %s", newUserResponse.Nama_depan, newUserResponse.Nama_belakang),
+		Code:    http.StatusCreated,
+		Message: "created",
+		Data:    newUserResponse,
 	}
 
-	helper.ResponseBody(w, response)
+	helper.ResponseBody(w, response, http.StatusCreated)
 }
 
 func (uc UserController) Login(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
@@ -66,20 +75,20 @@ func (uc UserController) Login(w http.ResponseWriter, r *http.Request, param htt
 	loggedInUser, err := uc.S.FindUserByEmail(r.Context(), loginRequser.Email)
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
-			Code:   404,
-			Status: "NOT FOUND",
-			Data:   "Email not registered",
-		})
+			Code:    404,
+			Message: "NOT FOUND",
+			Data:    "Email not registered",
+		}, http.StatusNotFound)
 		return
 	}
 
 	// Validate password
 	if !helper.ValidatePassword(loginRequser.Password, loggedInUser.Password) {
 		helper.ResponseBody(w, entity.WebResponse{
-			Code:   400,
-			Status: "BAD REQUEST",
-			Data:   "Incorrect password",
-		})
+			Code:    400,
+			Message: "BAD REQUEST",
+			Data:    "Incorrect password",
+		}, http.StatusBadRequest)
 		return
 	}
 
@@ -90,12 +99,12 @@ func (uc UserController) Login(w http.ResponseWriter, r *http.Request, param htt
 	})
 
 	response := entity.WebResponse{
-		Code:   200,
-		Status: "success login",
-		Data:   token,
+		Code:    http.StatusCreated,
+		Message: "success login",
+		Data:    token,
 	}
 
-	helper.ResponseBody(w, response)
+	helper.ResponseBody(w, response, http.StatusCreated)
 }
 
 func (uc UserController) GetUser(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
@@ -105,38 +114,38 @@ func (uc UserController) GetUser(w http.ResponseWriter, r *http.Request, param h
 	user, err := uc.S.FindUserById(r.Context(), idInt)
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
-			Code:   404,
-			Status: "NOT FOUND",
-			Data:   fmt.Sprintf("User with ID %s not found", id),
-		})
+			Code:    http.StatusNotFound,
+			Message: "NOT FOUND",
+			Data:    fmt.Sprintf("User with ID %s not found", id),
+		}, http.StatusNotFound)
 		return
 	}
 
 	// Success response
 	helper.ResponseBody(w, entity.WebResponse{
-		Code:   200,
-		Status: "OK",
-		Data:   user,
-	})
+		Code:    http.StatusOK,
+		Message: "OK",
+		Data:    user,
+	}, http.StatusOK)
 }
 
 func (uc UserController) GetAllUser(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
 	users, err := uc.S.FindAllUsers(r.Context())
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
-			Code:   500,
-			Status: "Internal Server Error",
-			Data:   "Failed to retrieve users",
-		})
+			Code:    http.StatusInternalServerError,
+			Message: "Internal Server Error",
+			Data:    "Failed to retrieve users",
+		}, http.StatusInternalServerError)
 		return
 	}
 
 	// Success response
 	helper.ResponseBody(w, entity.WebResponse{
-		Code:   200,
-		Status: "OK",
-		Data:   users,
-	})
+		Code:    http.StatusOK,
+		Message: "OK",
+		Data:    users,
+	}, http.StatusOK)
 }
 
 func (uc UserController) EditUser(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
@@ -151,19 +160,19 @@ func (uc UserController) EditUser(w http.ResponseWriter, r *http.Request, param 
 	_, err := uc.S.EditUser(r.Context(), idInt, userReq)
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
-			Code:   400,
-			Status: "BAD REQUEST",
-			Data:   "Failed to update user",
-		})
+			Code:    http.StatusBadRequest,
+			Message: "BAD REQUEST",
+			Data:    "Failed to update user",
+		}, http.StatusBadRequest)
 		return
 	}
 
 	// Success response
 	helper.ResponseBody(w, entity.WebResponse{
-		Code:   200,
-		Status: "OK",
-		Data:   "success update data user ",
-	})
+		Code:    http.StatusOK,
+		Message: "OK",
+		Data:    "success update data user ",
+	}, http.StatusOK)
 }
 
 func (uc UserController) DeleteUser(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
@@ -175,17 +184,17 @@ func (uc UserController) DeleteUser(w http.ResponseWriter, r *http.Request, para
 	err := uc.S.DeleteUser(r.Context(), idInt)
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
-			Code:   400,
-			Status: "BAD REQUEST",
-			Data:   "Failed to delete user",
-		})
+			Code:    http.StatusBadRequest,
+			Message: "BAD REQUEST",
+			Data:    "Failed to delete user",
+		}, http.StatusBadRequest)
 		return
 	}
 
 	// Success response
 	helper.ResponseBody(w, entity.WebResponse{
-		Code:   200,
-		Status: "OK",
-		Data:   fmt.Sprintf("User with ID %s has been deleted", id),
-	})
+		Code:    http.StatusOK,
+		Message: "OK",
+		Data:    fmt.Sprintf("User with ID %s has been deleted", id),
+	}, http.StatusOK)
 }

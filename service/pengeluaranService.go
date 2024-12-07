@@ -30,6 +30,7 @@ func NewPengeluaranService(db sqlx.DB, pr repository.PengeluaranRepositoryInj) P
 }
 
 func (pr PengeluaranService) CreatePengeluaran(ctx context.Context, pengeluaranReq entity.PengeluaranRequest) (entity.Pengeluaran, error) {
+
 	tx, err := pr.DB.Beginx()
 	// helper.PanicIfError(err)
 	if err != nil {

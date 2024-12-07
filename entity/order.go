@@ -1,6 +1,8 @@
 package entity
 
-import "time"
+import (
+	"time"
+)
 
 type Order struct {
 	Id                   int       `json:"id"`
@@ -12,6 +14,8 @@ type Order struct {
 	Tanggal_order        time.Time `json:"tanggal_order"`
 	Total                int       `json:"total"`
 	Status               string    `json:"status"`
+	Payment_type         string    `json:"payment_status"`
+	Payment_url          string    `json:"payment_url"`
 }
 
 type OrderRequest struct {
@@ -22,4 +26,6 @@ type OrderRequest struct {
 	Jumlah               int    `json:"jumlah"`
 	Total                int    `json:"total"`
 	Status               string `json:"status"`
+	Payment_type         string `json:"payment_status"`
+	Payment_url          string `json:"payment_url"`
 }

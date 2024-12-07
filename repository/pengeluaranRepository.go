@@ -92,7 +92,7 @@ func (r *pengeluaranRepository) UpdatePengeluaran(ctx context.Context, tx sqlx.T
 			users_id = $3, 
 			total = $4, 
 			bukti_pengeluaran = $5, 
-			updated_at = $6
+			created_at = $6
 		WHERE id = $7
 		RETURNING *
 	`

@@ -3,6 +3,7 @@ package router
 import (
 	"project-ta/config"
 	"project-ta/controller"
+	"project-ta/helper"
 	"project-ta/middleware"
 	"project-ta/repository"
 	"project-ta/service"
@@ -28,12 +29,12 @@ func NewRouter() *httprouter.Router {
 	layananController := controller.NewLayananController(layananService)
 
 	orderRepo := repository.NewOrderRepository()
-	orderService := service.NewOrderService(orderRepo, db, layananRepo)
-	orderControllerr := controller.NewOrderController(orderService)
+	orderService := service.NewOrderService(*midtrans, orderRepo, db, layananRepo)
+	orderControllerr := controller.NewOrderController(orderService, *midtrans)
 
 	paymentRepo := repository.NewMidtransPaymentRepository()
 	paymentService := service.NewPaymentService(*midtrans, db, paymentRepo, orderRepo)
-	paymentController := controller.NewPaymentController(paymentService, orderService)
+	paymentController := controller.NewPaymentController(paymentService, orderService, *midtrans)
 
 	pengeluaranRepo := repository.NewPengeluaranRepository()
 	pengeluranService := service.NewPengeluaranService(db, pengeluaranRepo)
@@ -64,7 +65,8 @@ func NewRouter() *httprouter.Router {
 	router.PUT("/api/steam/order/:id", adminMiddleware.AuthAdmin(orderControllerr.EditOrder))
 	router.DELETE("/api/steam/order/:id", adminMiddleware.AuthAdmin(orderControllerr.DeleteORder))
 
-	router.POST("/api/steam/payment", paymentController.CreatePayment)
+	// router.POST("/api/steam/payment", paymentController.CreatePayment)
+	// router.PUT("/api/steam/payment", paymentController.CheckPaymentStatus)
 
 	router.POST("/api/steam/pengeluaran", pengeluaranController.CreatePengeluaran)
 	router.GET("/api/steam/pengeluaran", pengeluaranController.GetPengeluaran)
@@ -72,7 +74,9 @@ func NewRouter() *httprouter.Router {
 	router.PUT("/api/steam/pengeluaran/:id", pengeluaranController.UpdatePengeluaran)
 	router.DELETE("/api/steam/pengeluaran/:id", pengeluaranController.DeletePengeluaran)
 
-	// router.PanicHandler = helper.ErrorHandler
+	router.POST("/webhook", paymentController.VerifyPayment)
+
+	router.PanicHandler = helper.PanicHandlerWrapper
 
 	return router
 }

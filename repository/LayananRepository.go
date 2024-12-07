@@ -60,7 +60,7 @@ func (l LayananRepositories) DeleteById(ctx context.Context, id int, db *sqlx.Tx
 }
 
 func (l LayananRepositories) FindById(ctx context.Context, id int, db sqlx.Tx) (entity.Layanan, error) {
-	sqlQuery := `SELECT * FROM layanan where id = $1`
+	sqlQuery := `SELECT * FROM layanan WHERE id = $1;`
 
 	var layananById entity.Layanan
 
@@ -70,7 +70,7 @@ func (l LayananRepositories) FindById(ctx context.Context, id int, db sqlx.Tx) (
 }
 
 func (l LayananRepositories) FindAll(ctx context.Context, db sqlx.Tx) ([]entity.Layanan, error) {
-	sqlQuery := `SELECT * FROM layanan`
+	sqlQuery := `SELECT * FROM layanan;`
 
 	var layanan []entity.Layanan
 

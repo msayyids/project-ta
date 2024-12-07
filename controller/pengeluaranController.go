@@ -7,6 +7,7 @@ import (
 	"project-ta/service"
 	"strconv"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -30,26 +31,36 @@ func NewPengeluaranController(p service.PengeluaranServiceInj) PengeluaranContro
 
 func (pc PengeluaranController) CreatePengeluaran(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
 	var requestBody entity.PengeluaranRequest
+	validate := validator.New()
+
+	if err := validate.Struct(requestBody); err != nil {
+		helper.ResponseBody(w, entity.WebResponse{
+			Code:    http.StatusBadRequest,
+			Message: "BAD REQUEST",
+			Data:    "INVALID INPUT",
+		}, http.StatusBadRequest)
+		return
+	}
 
 	helper.RequestBody(r, &requestBody)
 
 	newPengeluaran, err := pc.P.CreatePengeluaran(r.Context(), requestBody)
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
-			Code:   500,
-			Status: "Internal Server Error",
-			Data:   "Failed to create user",
-		})
+			Code:    http.StatusInternalServerError,
+			Message: "Internal Server Error",
+			Data:    "Failed to create user",
+		}, http.StatusInternalServerError)
 		return
 	}
 
 	response := entity.WebResponse{
-		Code:   201,
-		Status: "created",
-		Data:   newPengeluaran,
+		Code:    http.StatusCreated,
+		Message: "created",
+		Data:    newPengeluaran,
 	}
 
-	helper.ResponseBody(w, response)
+	helper.ResponseBody(w, response, http.StatusCreated)
 
 }
 
@@ -58,20 +69,20 @@ func (pc PengeluaranController) GetPengeluaran(w http.ResponseWriter, r *http.Re
 	allPengeluaran, err := pc.P.FindAllPengeluaran(r.Context())
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
-			Code:   404,
-			Status: "not found",
-			Data:   "Failed to create user",
-		})
+			Code:    http.StatusNotFound,
+			Message: "not found",
+			Data:    "Failed to create user",
+		}, http.StatusNotFound)
 		return
 	}
 
 	response := entity.WebResponse{
-		Code:   200,
-		Status: "ok",
-		Data:   allPengeluaran,
+		Code:    http.StatusOK,
+		Message: "ok",
+		Data:    allPengeluaran,
 	}
 
-	helper.ResponseBody(w, response)
+	helper.ResponseBody(w, response, http.StatusOK)
 
 }
 
@@ -83,20 +94,20 @@ func (pc PengeluaranController) GetPengeluaranById(w http.ResponseWriter, r *htt
 	pengeluaran, err := pc.P.FindPengeluaranById(r.Context(), idInt)
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
-			Code:   404,
-			Status: "not found",
-			Data:   "Failed to create user",
-		})
+			Code:    http.StatusNotFound,
+			Message: "not found",
+			Data:    "Failed to create user",
+		}, http.StatusNotFound)
 		return
 	}
 
 	response := entity.WebResponse{
-		Code:   200,
-		Status: "ok",
-		Data:   pengeluaran,
+		Code:    http.StatusOK,
+		Message: "ok",
+		Data:    pengeluaran,
 	}
 
-	helper.ResponseBody(w, response)
+	helper.ResponseBody(w, response, http.StatusOK)
 }
 
 func (pc PengeluaranController) DeletePengeluaran(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
@@ -107,20 +118,20 @@ func (pc PengeluaranController) DeletePengeluaran(w http.ResponseWriter, r *http
 	err := pc.P.DeletePengeluaran(r.Context(), idInt)
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
-			Code:   404,
-			Status: "not found",
-			Data:   "Failed to create user",
-		})
+			Code:    http.StatusNotFound,
+			Message: "not found",
+			Data:    "Failed to create user",
+		}, http.StatusNotFound)
 		return
 	}
 
 	response := entity.WebResponse{
-		Code:   200,
-		Status: "ok",
-		Data:   "succes delete pengeluaran",
+		Code:    http.StatusOK,
+		Message: "ok",
+		Data:    "succes delete pengeluaran",
 	}
 
-	helper.ResponseBody(w, response)
+	helper.ResponseBody(w, response, http.StatusOK)
 }
 
 func (pc PengeluaranController) UpdatePengeluaran(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
@@ -134,19 +145,19 @@ func (pc PengeluaranController) UpdatePengeluaran(w http.ResponseWriter, r *http
 	editedPengeluaran, err := pc.P.EditPengeluaran(r.Context(), requestBody, idInt)
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
-			Code:   500,
-			Status: "Internal Server Error",
-			Data:   "Failed to create user",
-		})
+			Code:    http.StatusInternalServerError,
+			Message: "Internal Server Error",
+			Data:    "Failed to create user",
+		}, http.StatusInternalServerError)
 		return
 	}
 
 	response := entity.WebResponse{
-		Code:   201,
-		Status: "created",
-		Data:   editedPengeluaran,
+		Code:    http.StatusOK,
+		Message: "succses edit data pengeluaran",
+		Data:    editedPengeluaran,
 	}
 
-	helper.ResponseBody(w, response)
+	helper.ResponseBody(w, response, http.StatusOK)
 
 }
