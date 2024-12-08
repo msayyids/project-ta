@@ -2,29 +2,38 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
-	"project-ta/helper"
 
-	"github.com/jmoiron/sqlx"
-	_ "github.com/joho/godotenv/autoload"
-	_ "github.com/lib/pq"
+	"github.com/joho/godotenv"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
-var (
-	user     = os.Getenv("DB_USERNAME")
-	dbname   = os.Getenv("DB_DBNAME")
-	sslmode  = os.Getenv("DB_SSLMODE")
-	password = os.Getenv("DB_PASSWORD")
-	host     = os.Getenv("DB_HOST")
-)
+func ConnectDb() *gorm.DB {
 
-func ConnectionString() string {
-	return fmt.Sprintf("user=%s dbname=%s sslmode=%s password=%s host=%s", user, dbname, sslmode, password, host)
-}
+	// Load .env file
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
-func ConnecDb() sqlx.DB {
-	db, err := sqlx.Connect("postgres", ConnectionString())
-	helper.PanicIfError(err)
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+	dbUser := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASSWORD")
+	dbName := os.Getenv("DB_DBNAME")
+	dbSSLMode := os.Getenv("DB_SSLMODE")
 
-	return *db
+	dsn := fmt.Sprintf("host=%v user=%v password=%v dbname=%v port=%v sslmode=%v",
+		dbHost, dbUser, dbPassword, dbName, dbPort, dbSSLMode)
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
+	if err != nil {
+		log.Panic("Failed to connect to database: ", err)
+	}
+
+	return db
 }

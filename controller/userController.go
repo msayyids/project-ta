@@ -32,43 +32,47 @@ func NewUserController(s service.UserServiceInj) UserControllerInj {
 
 func (uc UserController) CreateUsers(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
 	newUser := entity.UserRequest{}
-	validate := validator.New()
 
-	if err := validate.Struct(newUser); err != nil {
+	// Parsing request body
+	helper.RequestBody(r, &newUser)
+
+	// Validasi input
+	validate := validator.New()
+	err := validate.Struct(newUser)
+	if err != nil {
+		// Tampilkan detail error untuk debugging
 		helper.ResponseBody(w, entity.WebResponse{
 			Code:    http.StatusBadRequest,
 			Message: "BAD REQUEST",
-			Data:    "INVALID INPUT",
+			Data:    fmt.Sprintf("Invalid input: %v", err),
 		}, http.StatusBadRequest)
 		return
 	}
-	helper.RequestBody(r, &newUser)
 
-	hashedPassword := helper.HashPassword(newUser.Password)
-	newUser.Password = hashedPassword
+	// Hash password
+	newUser.Password = helper.HashPassword(newUser.Password)
 
+	// Proses pembuatan user
 	newUserResponse, err := uc.S.CreateUser(r.Context(), newUser)
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
 			Code:    http.StatusInternalServerError,
 			Message: "INTERNAL SERVER ERROR",
-			Data:    "Email not registered",
+			Data:    "Failed to create user",
 		}, http.StatusInternalServerError)
 		return
 	}
 
-	// Success response
-	response := entity.WebResponse{
+	// Response sukses
+	helper.ResponseBody(w, entity.WebResponse{
 		Code:    http.StatusCreated,
-		Message: "created",
+		Message: "CREATED",
 		Data:    newUserResponse,
-	}
-
-	helper.ResponseBody(w, response, http.StatusCreated)
+	}, http.StatusCreated)
 }
 
 func (uc UserController) Login(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
-	loginRequser := entity.UserLoginRequest{}
+	loginRequser := entity.LoginRequest{}
 	helper.RequestBody(r, &loginRequser)
 
 	// Find user by email
@@ -94,7 +98,7 @@ func (uc UserController) Login(w http.ResponseWriter, r *http.Request, param htt
 
 	// Create JWT token
 	token := helper.CreateJWT(jwt.MapClaims{
-		"id":   loggedInUser.Id,
+		"id":   loggedInUser.ID,
 		"role": loggedInUser.Role,
 	})
 

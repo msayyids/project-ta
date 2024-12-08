@@ -2,121 +2,59 @@ package service
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"project-ta/entity"
-	"project-ta/helper"
 	"project-ta/repository"
 
-	"github.com/jmoiron/sqlx"
-	"github.com/midtrans/midtrans-go/coreapi"
+	"github.com/go-playground/validator/v10"
+	"gorm.io/gorm"
 )
 
 type OrderServiceInj interface {
-	CreateOrder(ctx context.Context, orderReq entity.OrderRequest) (entity.Order, error)
-	EditOrderById(ctx context.Context, id int, orderReq entity.OrderRequest) (entity.Order, error)
-	GetOrderById(ctx context.Context, id int) (entity.Order, error)
-	GetOrder(ctx context.Context) ([]entity.Order, error)
-	DeleteOrder(ctx context.Context, id int) error
+	CreateOrder(ctx context.Context, order entity.OrderReq) (entity.Order, error)
 }
 
-type OrderServices struct {
-	Client      coreapi.Client
-	DB          sqlx.DB
-	OrderRepo   repository.OrderRepositoryInj
-	LayananRepo repository.LayananRepositoryInj
+type OrderService struct {
+	DB       *gorm.DB
+	Validate *validator.Validate
+	Repo     repository.OrderRepositoryInj
 }
 
-func NewOrderService(client coreapi.Client, or repository.OrderRepositoryInj, db sqlx.DB, lp repository.LayananRepositoryInj) OrderServiceInj {
-	return OrderServices{
-		Client:      client,
-		DB:          db,
-		OrderRepo:   or,
-		LayananRepo: lp,
+func NewOrderService(db *gorm.DB, v *validator.Validate, repo repository.OrderRepositoryInj) OrderServiceInj {
+	return &OrderService{
+		DB:       db,
+		Validate: v,
+		Repo:     repo,
 	}
 }
 
-func (s OrderServices) CreateOrder(ctx context.Context, orderReq entity.OrderRequest) (entity.Order, error) {
-	tx, err := s.DB.Beginx()
-	helper.PanicIfError(err)
-
-	defer helper.CommitOrRollback(tx)
-
-	// Validate input
-	if orderReq.Layanan_id <= 0 || orderReq.Jumlah <= 0 {
-		log.Printf("Invalid input: %+v", orderReq)
-		return entity.Order{}, fmt.Errorf("invalid input")
-	}
-
-	layanan, err := s.LayananRepo.FindById(ctx, orderReq.Layanan_id, *tx)
+func (s *OrderService) CreateOrder(ctx context.Context, order entity.OrderReq) (entity.Order, error) {
+	// Validasi input
+	err := s.Validate.Struct(order)
 	if err != nil {
-		log.Printf("Failed to find layanan: %v", err)
-		return entity.Order{}, fmt.Errorf("error dsni")
+		return entity.Order{}, err
 	}
 
-	log.Printf("Harga layanan ditemukan: %d", layanan.Harga)
-	orderReq.Total = layanan.Harga * orderReq.Jumlah
+	tx := s.DB.Begin()
 
-	newOrder, err := s.OrderRepo.AddOrder(ctx, orderReq, tx)
+	// Pastikan transaksi di-rollback jika terjadi error
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			panic(r)
+		}
+	}()
+
+	// Buat order baru
+	newOrder, err := s.Repo.AddOrder(ctx, order, tx)
 	if err != nil {
-		log.Printf("Error adding order: %v", err)
-		return entity.Order{}, fmt.Errorf("error 1 not found")
+		tx.Rollback() // Rollback jika ada error
+		return entity.Order{}, err
+	}
+
+	// Commit transaksi setelah order berhasil ditambahkan
+	if err := tx.Commit().Error; err != nil {
+		return entity.Order{}, err
 	}
 
 	return newOrder, nil
-}
-
-func (s OrderServices) EditOrderById(ctx context.Context, id int, orderReq entity.OrderRequest) (entity.Order, error) {
-	tx, err := s.DB.Beginx()
-	helper.PanicIfError(err)
-
-	defer helper.CommitOrRollback(tx)
-
-	editedOrder, err := s.OrderRepo.UpdateOrderById(ctx, id, orderReq, tx)
-
-	helper.PanicIfError(err)
-
-	return editedOrder, nil
-}
-
-func (s OrderServices) GetOrderById(ctx context.Context, id int) (entity.Order, error) {
-	tx, err := s.DB.Beginx()
-	// helper.PanicIfError(err)
-	if err != nil {
-		return entity.Order{}, fmt.Errorf("error 1")
-	}
-
-	defer helper.CommitOrRollback(tx)
-
-	order, err := s.OrderRepo.FindOrderById(ctx, id, tx)
-	// helper.PanicIfError(err)
-	if err != nil {
-		return entity.Order{}, fmt.Errorf("error 2")
-	}
-
-	return order, nil
-}
-
-func (s OrderServices) GetOrder(ctx context.Context) ([]entity.Order, error) {
-	tx, err := s.DB.Beginx()
-	helper.PanicIfError(err)
-
-	defer helper.CommitOrRollback(tx)
-
-	allOrder, err := s.OrderRepo.FindOrder(ctx, tx)
-	helper.PanicIfError(err)
-
-	return allOrder, nil
-}
-
-func (s OrderServices) DeleteOrder(ctx context.Context, id int) error {
-	tx, err := s.DB.Beginx()
-	helper.PanicIfError(err)
-
-	defer helper.CommitOrRollback(tx)
-
-	err = s.DeleteOrder(ctx, id)
-	helper.PanicIfError(err)
-
-	return nil
 }

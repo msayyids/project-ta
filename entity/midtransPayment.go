@@ -23,3 +23,8 @@ type MidtransPaymentRequest struct {
 type ReqId struct {
 	OrderID int `json:"order_id"`
 }
+
+type CreatePaymentResponse struct {
+	Snap_url string `json:"snap_url"`
+	Orderid  int    `json:"-"`
+}

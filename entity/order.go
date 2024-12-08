@@ -1,31 +1,28 @@
 package entity
 
-import (
-	"time"
-)
+import "time"
 
 type Order struct {
-	Id                   int       `json:"id"`
-	Nama_pelanggan       string    `json:"nama_pelanggan"`
-	No_Telepon_Pelanggan string    `json:"no_telepon_pelanggan"`
-	Layanan_id           int       `json:"layanan_id"`
-	User_id              int       `json:"user_id"`
-	Jumlah               int       `json:"jumlah"`
-	Tanggal_order        time.Time `json:"tanggal_order"`
-	Total                int       `json:"total"`
-	Status               string    `json:"status"`
-	Payment_type         string    `json:"payment_status"`
-	Payment_url          string    `json:"payment_url"`
+	ID                 int       `json:"id" gorm:"primaryKey;autoIncrement"`
+	NamaPelanggan      string    `json:"nama_pelanggan" gorm:"type:varchar(255);not null"`
+	NoTeleponPelanggan string    `json:"no_telepon_pelanggan,omitempty" gorm:"type:varchar(15)"`
+	LayananID          int       `json:"layanan_id" gorm:"not null"`
+	UserID             int       `json:"user_id" gorm:"not null"`
+	Jumlah             int       `json:"jumlah" gorm:"not null"`
+	TanggalOrder       time.Time `json:"tanggal_order" gorm:"default:CURRENT_TIMESTAMP"`
+	Total              int       `json:"total" gorm:"not null"`
+	Status             string    `json:"status" gorm:"type:varchar(50);default:'UNPAID'"`
+	PaymentType        string    `json:"payment_type" gorm:"type:varchar(50);not null"`
 }
 
-type OrderRequest struct {
-	Nama_pelanggan       string `json:"nama_pelanggan"`
-	No_Telepon_Pelanggan string `json:"no_telepon_pelanggan"`
-	Layanan_id           int    `json:"layanan_id"`
-	User_id              int    `json:"user_id"`
-	Jumlah               int    `json:"jumlah"`
-	Total                int    `json:"total"`
-	Status               string `json:"status"`
-	Payment_type         string `json:"payment_status"`
-	Payment_url          string `json:"payment_url"`
+type OrderReq struct {
+	NamaPelanggan      string    `json:"nama_pelanggan" gorm:"type:varchar(255);not null"`
+	NoTeleponPelanggan string    `json:"no_telepon_pelanggan,omitempty" gorm:"type:varchar(15)"`
+	LayananID          int       `json:"layanan_id" gorm:"not null"`
+	UserID             int       `json:"user_id" gorm:"not null"`
+	Jumlah             int       `json:"jumlah" gorm:"not null"`
+	TanggalOrder       time.Time `json:"tanggal_order" gorm:"default:CURRENT_TIMESTAMP"`
+	Total              int       `json:"total" gorm:"not null"`
+	Status             string    `json:"status" gorm:"type:varchar(50);default:'UNPAID'"`
+	PaymentType        string    `json:"payment_type" gorm:"type:varchar(50);not null"`
 }

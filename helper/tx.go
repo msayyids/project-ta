@@ -1,15 +1,21 @@
 package helper
 
-import "github.com/jmoiron/sqlx"
+import "gorm.io/gorm"
 
-func CommitOrRollback(tx *sqlx.Tx) {
+func CommitOrRollback(tx *gorm.DB) {
 	err := recover()
 	if err != nil {
-		errorRollback := tx.Rollback()
-		PanicIfError(errorRollback)
+		// If there is a panic, rollback the transaction
+		if rollbackErr := tx.Rollback().Error; rollbackErr != nil {
+			// Handle the rollback error
+			panic(rollbackErr)
+		}
 		panic(err)
 	} else {
-		errorCommit := tx.Commit()
-		PanicIfError(errorCommit)
+		// If no error, commit the transaction
+		if commitErr := tx.Commit().Error; commitErr != nil {
+			// Handle the commit error
+			panic(commitErr)
+		}
 	}
 }

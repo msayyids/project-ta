@@ -7,13 +7,14 @@ import (
 	"project-ta/helper"
 	"project-ta/repository"
 
-	"github.com/jmoiron/sqlx"
+	"gorm.io/gorm"
 )
 
 type PengeluaranService struct {
-	DB              sqlx.DB
+	DB              *gorm.DB
 	PengeluaranRepo repository.PengeluaranRepositoryInj
 }
+
 type PengeluaranServiceInj interface {
 	CreatePengeluaran(ctx context.Context, pengeluaranReq entity.PengeluaranRequest) (entity.Pengeluaran, error)
 	EditPengeluaran(ctx context.Context, pengeluaranReq entity.PengeluaranRequest, id int) (entity.Pengeluaran, error)
@@ -22,105 +23,69 @@ type PengeluaranServiceInj interface {
 	DeletePengeluaran(ctx context.Context, id int) error
 }
 
-func NewPengeluaranService(db sqlx.DB, pr repository.PengeluaranRepositoryInj) PengeluaranServiceInj {
-	return PengeluaranService{
+func NewPengeluaranService(db *gorm.DB, pr repository.PengeluaranRepositoryInj) PengeluaranServiceInj {
+	return &PengeluaranService{
 		DB:              db,
 		PengeluaranRepo: pr,
 	}
 }
 
-func (pr PengeluaranService) CreatePengeluaran(ctx context.Context, pengeluaranReq entity.PengeluaranRequest) (entity.Pengeluaran, error) {
-
-	tx, err := pr.DB.Beginx()
-	// helper.PanicIfError(err)
-	if err != nil {
-		return entity.Pengeluaran{}, fmt.Errorf("error disini")
-	}
-
+func (pr *PengeluaranService) CreatePengeluaran(ctx context.Context, pengeluaranReq entity.PengeluaranRequest) (entity.Pengeluaran, error) {
+	tx := pr.DB.Begin()
 	defer helper.CommitOrRollback(tx)
 
-	newPengeluaran, err := pr.PengeluaranRepo.AddPengeluaran(ctx, *tx, pengeluaranReq)
-	// helper.PanicIfError(err)
+	newPengeluaran, err := pr.PengeluaranRepo.AddPengeluaran(ctx, pengeluaranReq, tx)
 	if err != nil {
-		return entity.Pengeluaran{}, fmt.Errorf("error pengeluaran 2")
+		return entity.Pengeluaran{}, fmt.Errorf("error saat menambahkan pengeluaran: %w", err)
 	}
 
 	return newPengeluaran, nil
-
 }
 
-func (pr PengeluaranService) EditPengeluaran(ctx context.Context, pengeluaranReq entity.PengeluaranRequest, id int) (entity.Pengeluaran, error) {
-	tx, err := pr.DB.Beginx()
-	// helper.PanicIfError(err)
-	if err != nil {
-		return entity.Pengeluaran{}, fmt.Errorf("error disini")
-	}
-
+func (pr *PengeluaranService) EditPengeluaran(ctx context.Context, pengeluaranReq entity.PengeluaranRequest, id int) (entity.Pengeluaran, error) {
+	tx := pr.DB.Begin()
 	defer helper.CommitOrRollback(tx)
 
-	newPengeluaran, err := pr.PengeluaranRepo.UpdatePengeluaran(ctx, *tx, id, pengeluaranReq)
-	// helper.PanicIfError(err)
+	updatedPengeluaran, err := pr.PengeluaranRepo.UpdatePengeluaran(ctx, id, pengeluaranReq, tx)
 	if err != nil {
-		return entity.Pengeluaran{}, fmt.Errorf("error pengeluaran 2")
+		return entity.Pengeluaran{}, fmt.Errorf("error saat mengedit pengeluaran: %w", err)
 	}
 
-	return newPengeluaran, nil
-
+	return updatedPengeluaran, nil
 }
 
-func (pr PengeluaranService) FindPengeluaranById(ctx context.Context, id int) (entity.Pengeluaran, error) {
-	tx, err := pr.DB.Beginx()
-	// helper.PanicIfError(err)
-	if err != nil {
-		return entity.Pengeluaran{}, fmt.Errorf("error disini")
-	}
-
+func (pr *PengeluaranService) FindPengeluaranById(ctx context.Context, id int) (entity.Pengeluaran, error) {
+	tx := pr.DB.Begin()
 	defer helper.CommitOrRollback(tx)
 
-	newPengeluaran, err := pr.PengeluaranRepo.FindPengeluaranById(ctx, *tx, id)
-	// helper.PanicIfError(err)
+	pengeluaran, err := pr.PengeluaranRepo.FindPengeluaranById(ctx, id, tx)
 	if err != nil {
-		return entity.Pengeluaran{}, fmt.Errorf("error pengeluaran 2")
+		return entity.Pengeluaran{}, fmt.Errorf("error saat mencari pengeluaran: %w", err)
 	}
 
-	return newPengeluaran, nil
-
+	return pengeluaran, nil
 }
 
-func (pr PengeluaranService) FindAllPengeluaran(ctx context.Context) ([]entity.Pengeluaran, error) {
-	tx, err := pr.DB.Beginx()
-	// helper.PanicIfError(err)
-	if err != nil {
-		return []entity.Pengeluaran{}, fmt.Errorf("error disini")
-	}
-
+func (pr *PengeluaranService) FindAllPengeluaran(ctx context.Context) ([]entity.Pengeluaran, error) {
+	tx := pr.DB.Begin()
 	defer helper.CommitOrRollback(tx)
 
-	newPengeluaran, err := pr.PengeluaranRepo.FindAllPengeluaran(ctx, *tx)
-	// helper.PanicIfError(err)
+	pengeluarans, err := pr.PengeluaranRepo.FindAllPengeluaran(ctx, tx)
 	if err != nil {
-		return []entity.Pengeluaran{}, fmt.Errorf("error pengeluaran 2")
+		return nil, fmt.Errorf("error saat mencari semua pengeluaran: %w", err)
 	}
 
-	return newPengeluaran, nil
-
+	return pengeluarans, nil
 }
 
-func (pr PengeluaranService) DeletePengeluaran(ctx context.Context, id int) error {
-	tx, err := pr.DB.Beginx()
-	// helper.PanicIfError(err)
-	if err != nil {
-		return fmt.Errorf("error disini")
-	}
-
+func (pr *PengeluaranService) DeletePengeluaran(ctx context.Context, id int) error {
+	tx := pr.DB.Begin()
 	defer helper.CommitOrRollback(tx)
 
-	err = pr.PengeluaranRepo.DeletePengeluaran(ctx, *tx, id)
-	// helper.PanicIfError(err)
+	err := pr.PengeluaranRepo.DeletePengeluaran(ctx, id, tx)
 	if err != nil {
-		return fmt.Errorf("error pengeluaran 2")
+		return fmt.Errorf("error saat menghapus pengeluaran: %w", err)
 	}
 
 	return nil
-
 }
