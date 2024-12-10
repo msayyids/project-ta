@@ -1,158 +1,159 @@
 package controller
 
 import (
+	"net/http"
+	"project-ta/entity"
+	"project-ta/helper"
 	"project-ta/service"
+	"strconv"
+
+	"github.com/go-playground/validator/v10"
+	"github.com/julienschmidt/httprouter"
 )
 
 type LayananControllerInj interface {
-	// CreateLayanan(w http.ResponseWriter, r *http.Request, param httprouter.Params)
-	// FindLayananById(w http.ResponseWriter, r *http.Request, param httprouter.Params)
-	// DeleteLayananById(w http.ResponseWriter, r *http.Request, param httprouter.Params)
-	// FindAllLayanan(w http.ResponseWriter, r *http.Request, param httprouter.Params)
-	// EditLayananById(w http.ResponseWriter, r *http.Request, param httprouter.Params)
+	CreateLayanan(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
+	FindLayananById(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
+	DeleteLayananById(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
+	FindAllLayanan(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
+	EditLayananById(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 }
 
 type LayananController struct {
-	Ls service.LayananServiceInj
+	LayananService service.LayananServiceInj
+	V              validator.Validate
 }
 
-func NewLayananController(ls service.LayananServiceInj) LayananControllerInj {
-	return LayananController{Ls: ls}
+func NewLayananController(layananService service.LayananServiceInj, v validator.Validate) LayananControllerInj {
+	return LayananController{LayananService: layananService, V: v}
 }
 
-// func (lc LayananController) CreateLayanan(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
-// 	layananRequest := entity.LayananRequest{}
-// 	helper.RequestBody(r, layananRequest)
+func (lc LayananController) CreateLayanan(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	var layananRequest entity.LayananRequest
 
-// 	newLayanan, err := lc.Ls.AddLayanan(r.Context(), layananRequest)
-// 	if err != nil {
-// 		helper.ResponseBody(w, entity.WebResponse{
-// 			Code:    500,
-// 			Message: "INTERNAL SERVER ERROR",
-// 			Data:    "FAILED CREATE LAYANAN",
-// 		}, http.StatusInternalServerError)
-// 		return
-// 	}
+	err := lc.V.Struct(layananRequest)
+	if err != nil {
+		helper.ResponseBody(w, entity.WebResponse{
+			Code:    http.StatusBadRequest,
+			Message: "BAD REQUEST",
+			Data:    "INVALID INPUT",
+		}, http.StatusBadRequest)
+		return
+	}
 
-// 	response := entity.WebResponse{
-// 		Code:    201,
-// 		Message: "SUCCESS CREATE LAYANAN",
-// 		Data:    newLayanan,
-// 	}
+	helper.RequestBody(r, &layananRequest)
 
-// 	helper.ResponseBody(w, response, http.StatusCreated)
+	newLayanan, err := lc.LayananService.AddLayanan(r.Context(), layananRequest)
+	if err != nil {
+		helper.ResponseBody(w, entity.WebResponse{
+			Code:    500,
+			Message: "INTERNAL SERVER ERROR",
+			Data:    "FAILED CREATE LAYANAN",
+		}, http.StatusInternalServerError)
+		return
+	}
 
-// }
+	response := entity.WebResponse{
+		Code:    201,
+		Message: "SUCCESS CREATE LAYANAN",
+		Data:    newLayanan,
+	}
 
-// func (lc LayananController) FindLayananById(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
-// 	idParam := param.ByName("id")
-// 	id, err := strconv.Atoi(idParam)
-// 	if err != nil {
-// 		helper.ResponseBody(w, entity.WebResponse{
-// 			Code:    404,
-// 			Message: "NOT FOUND",
-// 			Data:    nil,
-// 		}, http.StatusNotFound)
-// 		return
-// 	}
+	helper.ResponseBody(w, response, http.StatusCreated)
+}
 
-// 	layanan, err := lc.Ls.FindLayananById(r.Context(), id)
-// 	if err != nil {
-// 		helper.ResponseBody(w, entity.WebResponse{
-// 			Code:    http.StatusNotFound,
-// 			Message: "INTERNAL SERVER ERROR",
-// 			Data:    nil,
-// 		}, http.StatusNotFound)
+func (lc LayananController) FindLayananById(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	id := ps.ByName("id")
+	ids, err := strconv.Atoi(id)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
 
-// 		return
-// 	}
+	layanan, err := lc.LayananService.FindLayananById(r.Context(), ids) // Use ids here
+	if err != nil {
+		helper.ResponseBody(w, entity.WebResponse{
+			Code:    http.StatusNotFound,
+			Message: "NOT FOUND",
+			Data:    nil,
+		}, http.StatusNotFound)
+		return
+	}
 
-// 	layananByIdResponse := entity.WebResponse{
-// 		Code:    http.StatusOK,
-// 		Message: "OK",
-// 		Data:    layanan,
-// 	}
+	helper.ResponseBody(w, entity.WebResponse{
+		Code:    http.StatusOK,
+		Message: "OK",
+		Data:    layanan,
+	}, http.StatusOK)
+}
 
-// 	helper.ResponseBody(w, layananByIdResponse, http.StatusOK)
-// }
+func (lc LayananController) DeleteLayananById(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	id := ps.ByName("id")
+	ids, err := strconv.Atoi(id)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
 
-// func (lc LayananController) DeleteLayananById(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
+	err = lc.LayananService.DeleteLayananById(r.Context(), ids) // Use ids here
+	if err != nil {
+		helper.ResponseBody(w, entity.WebResponse{
+			Code:    http.StatusNotFound,
+			Message: "INTERNAL SERVER ERROR",
+			Data:    nil,
+		}, http.StatusNotFound)
+		return
+	}
 
-// 	idParam := param.ByName("id")
-// 	id, err := strconv.Atoi(idParam)
-// 	if err != nil {
-// 		helper.ResponseBody(w, entity.WebResponse{
-// 			Code:    http.StatusNotFound,
-// 			Message: "NOT FOUND",
-// 			Data:    nil,
-// 		}, http.StatusNotFound)
-// 		return
-// 	}
+	helper.ResponseBody(w, entity.WebResponse{
+		Code:    200,
+		Message: "SUCCESS DELETE LAYANAN",
+		Data:    nil,
+	}, http.StatusOK)
+}
 
-// 	err = lc.Ls.DeleteLayananById(r.Context(), id)
-// 	if err != nil {
-// 		helper.ResponseBody(w, entity.WebResponse{
-// 			Code:    http.StatusNotFound,
-// 			Message: "NOT FOUND",
-// 			Data:    nil,
-// 		}, http.StatusNotFound)
-// 		return
-// 	}
+func (lc LayananController) FindAllLayanan(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	layanan, err := lc.LayananService.FindAllLayanan(r.Context())
+	if err != nil {
+		helper.ResponseBody(w, entity.WebResponse{
+			Code:    500,
+			Message: "INTERNAL SERVER ERROR",
+			Data:    "FAILED FETCH LAYANAN",
+		}, http.StatusInternalServerError)
+		return
+	}
 
-// 	response := entity.WebResponse{
-// 		Code:    http.StatusOK,
-// 		Message: "OK",
-// 		Data:    "success delete layanan",
-// 	}
+	helper.ResponseBody(w, entity.WebResponse{
+		Code:    http.StatusOK,
+		Message: "SUCCESS",
+		Data:    layanan,
+	}, http.StatusOK)
+}
 
-// 	helper.ResponseBody(w, response, http.StatusOK)
+func (lc LayananController) EditLayananById(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	id := ps.ByName("id")
+	ids, err := strconv.Atoi(id)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
 
-// }
+	var layananRequest entity.LayananRequest
+	helper.RequestBody(r, &layananRequest)
 
-// func (lc LayananController) FindAllLayanan(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
-// 	allLayanan, err := lc.Ls.FindAllLayanan(r.Context())
-// 	if err != nil {
-// 		helper.ResponseBody(w, entity.WebResponse{
-// 			Code:    http.StatusNotFound,
-// 			Message: "NOT FOUND",
-// 			Data:    nil,
-// 		}, http.StatusNotFound)
-// 		return
-// 	}
+	layanan, err := lc.LayananService.EditLayananById(r.Context(), ids, layananRequest) // Use ids here
+	if err != nil {
+		helper.ResponseBody(w, entity.WebResponse{
+			Code:    404,
+			Message: "NOT FOUND",
+			Data:    nil,
+		}, http.StatusNotFound)
+		return
+	}
 
-// 	helper.ResponseBody(w, allLayanan, http.StatusNotFound)
-
-// }
-
-// func (lc LayananController) EditLayananById(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
-// 	idParam := param.ByName("id")
-// 	id, err := strconv.Atoi(idParam)
-// 	if err != nil {
-// 		helper.ResponseBody(w, entity.WebResponse{
-// 			Code:    404,
-// 			Message: "NOT FOUND",
-// 			Data:    nil,
-// 		}, http.StatusNotFound)
-// 		return
-// 	}
-
-// 	layananRequest := entity.LayananRequest{}
-// 	helper.RequestBody(r, layananRequest)
-
-// 	editedLayanan, err := lc.Ls.EditLayananById(r.Context(), id, layananRequest)
-// 	if err != nil {
-// 		helper.ResponseBody(w, entity.WebResponse{
-// 			Code:    http.StatusNotFound,
-// 			Message: "NOT FOUND",
-// 			Data:    nil,
-// 		}, http.StatusNotFound)
-// 	}
-
-// 	response := entity.WebResponse{
-// 		Code:    http.StatusOK,
-// 		Message: "OK",
-// 		Data:    editedLayanan,
-// 	}
-
-// 	helper.ResponseBody(w, response, http.StatusOK)
-// }
+	helper.ResponseBody(w, entity.WebResponse{
+		Code:    200,
+		Message: "SUCCESS",
+		Data:    layanan,
+	}, http.StatusOK)
+}

@@ -34,8 +34,8 @@ func (a AuthenticationAdmin) AuthKaryawan(next httprouter.Handle) httprouter.Han
 		if token == "" {
 			helper.ResponseBody(w, entity.WebResponse{
 				Code:    http.StatusUnauthorized,
-				Message: "UNAUTHORIZED",
-				Data:    nil,
+				Message: "FORBIDDEN",
+				Data:    "Access denied",
 			}, http.StatusUnauthorized)
 			return
 		}
@@ -44,8 +44,8 @@ func (a AuthenticationAdmin) AuthKaryawan(next httprouter.Handle) httprouter.Han
 		if err != nil {
 			helper.ResponseBody(w, entity.WebResponse{
 				Code:    http.StatusUnauthorized,
-				Message: "UNAUTHORIZED",
-				Data:    nil,
+				Message: "FORBIDDEN",
+				Data:    "Access denied",
 			}, http.StatusUnauthorized)
 			return
 		}
@@ -57,8 +57,8 @@ func (a AuthenticationAdmin) AuthKaryawan(next httprouter.Handle) httprouter.Han
 		if err != nil {
 			helper.ResponseBody(w, entity.WebResponse{
 				Code:    http.StatusUnauthorized,
-				Message: "UNAUTHORIZED",
-				Data:    nil,
+				Message: "FORBIDDEN",
+				Data:    "Access denied",
 			}, http.StatusUnauthorized)
 			return
 		}
@@ -66,8 +66,8 @@ func (a AuthenticationAdmin) AuthKaryawan(next httprouter.Handle) httprouter.Han
 		if err != nil {
 			helper.ResponseBody(w, entity.WebResponse{
 				Code:    http.StatusUnauthorized,
-				Message: "UNAUTHORIZED",
-				Data:    nil,
+				Message: "FORBIDDEN",
+				Data:    "Access denied",
 			}, http.StatusUnauthorized)
 			return
 		}

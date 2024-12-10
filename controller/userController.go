@@ -33,23 +33,20 @@ func NewUserController(s service.UserServiceInj) UserControllerInj {
 func (uc UserController) CreateUsers(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
 	newUser := entity.UserRequest{}
 
-	// Parsing request body
-	helper.RequestBody(r, &newUser)
-
-	// Validasi input
 	validate := validator.New()
 	err := validate.Struct(newUser)
 	if err != nil {
-		// Tampilkan detail error untuk debugging
+
 		helper.ResponseBody(w, entity.WebResponse{
 			Code:    http.StatusBadRequest,
 			Message: "BAD REQUEST",
-			Data:    fmt.Sprintf("Invalid input: %v", err),
+			Data:    "INVALID INPUT",
 		}, http.StatusBadRequest)
 		return
 	}
 
-	// Hash password
+	helper.RequestBody(r, &newUser)
+
 	newUser.Password = helper.HashPassword(newUser.Password)
 
 	// Proses pembuatan user
@@ -103,7 +100,7 @@ func (uc UserController) Login(w http.ResponseWriter, r *http.Request, param htt
 	})
 
 	response := entity.WebResponse{
-		Code:    http.StatusCreated,
+		Code:    http.StatusOK,
 		Message: "success login",
 		Data:    token,
 	}
@@ -195,7 +192,6 @@ func (uc UserController) DeleteUser(w http.ResponseWriter, r *http.Request, para
 		return
 	}
 
-	// Success response
 	helper.ResponseBody(w, entity.WebResponse{
 		Code:    http.StatusOK,
 		Message: "OK",

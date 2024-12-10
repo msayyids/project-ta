@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"log"
 	"project-ta/entity"
 
 	"gorm.io/gorm"
@@ -10,15 +9,46 @@ import (
 
 type OrderRepositoryInj interface {
 	AddOrder(ctx context.Context, order entity.OrderReq, db *gorm.DB) (entity.Order, error)
+	FindById(ctx context.Context, id int, db *gorm.DB) (entity.Order, error)
+	FindAll(ctx context.Context, db *gorm.DB) ([]entity.Order, error)
+	UpdateOrder(ctx context.Context, id int, order entity.OrderReq, db *gorm.DB) (entity.Order, error)
+	DeleteOrder(ctx context.Context, id int, db *gorm.DB) error
+	SaveOrder(ctx context.Context, order entity.Order, tx *gorm.DB) error
+	UpdatePaymentURL(ctx context.Context, orderID int, paymentURL string, db *gorm.DB) error
 }
 
-type OrderRepository struct {
-}
+type OrderRepository struct{}
 
 func NewOrderRepository() OrderRepositoryInj {
 	return &OrderRepository{}
 }
 
+func (r *OrderRepository) UpdatePaymentURL(ctx context.Context, orderID int, paymentURL string, db *gorm.DB) error {
+	// Find the existing order by ID
+	var existingOrder entity.Order
+	if err := db.WithContext(ctx).First(&existingOrder, orderID).Error; err != nil {
+		return err
+	}
+
+	// Update only the payment_url field
+	existingOrder.Payment_url = paymentURL
+
+	// Save the updated order with the new payment_url
+	if err := db.WithContext(ctx).Save(&existingOrder).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *OrderRepository) SaveOrder(ctx context.Context, order entity.Order, tx *gorm.DB) error {
+	if err := tx.Save(&order).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+// AddOrder to insert new order into database
 func (r *OrderRepository) AddOrder(ctx context.Context, order entity.OrderReq, db *gorm.DB) (entity.Order, error) {
 	orders := entity.Order{
 		NamaPelanggan:      order.NamaPelanggan,
@@ -34,9 +64,58 @@ func (r *OrderRepository) AddOrder(ctx context.Context, order entity.OrderReq, d
 
 	err := db.Create(&orders).Error
 	if err != nil {
-		log.Println("Error creating order:", err)
 		return entity.Order{}, err
 	}
 
 	return orders, nil
+}
+
+// FindById to get order by ID
+func (r *OrderRepository) FindById(ctx context.Context, id int, db *gorm.DB) (entity.Order, error) {
+	var order entity.Order
+	if err := db.WithContext(ctx).First(&order, id).Error; err != nil {
+		return entity.Order{}, err
+	}
+	return order, nil
+}
+
+// FindAll to get all orders
+func (r *OrderRepository) FindAll(ctx context.Context, db *gorm.DB) ([]entity.Order, error) {
+	var orders []entity.Order
+	if err := db.WithContext(ctx).Find(&orders).Error; err != nil {
+		return nil, err
+	}
+	return orders, nil
+}
+
+// UpdateOrder to update existing order by ID
+func (r *OrderRepository) UpdateOrder(ctx context.Context, id int, order entity.OrderReq, db *gorm.DB) (entity.Order, error) {
+	var existingOrder entity.Order
+	if err := db.WithContext(ctx).First(&existingOrder, id).Error; err != nil {
+		return entity.Order{}, err
+	}
+
+	// Update the fields
+	existingOrder.NamaPelanggan = order.NamaPelanggan
+	existingOrder.NoTeleponPelanggan = order.NoTeleponPelanggan
+	existingOrder.LayananID = order.LayananID
+	existingOrder.UserID = order.UserID
+	existingOrder.Jumlah = order.Jumlah
+	existingOrder.Total = order.Total
+	existingOrder.Status = order.Status
+	existingOrder.PaymentType = order.PaymentType
+
+	if err := db.WithContext(ctx).Save(&existingOrder).Error; err != nil {
+		return entity.Order{}, err
+	}
+
+	return existingOrder, nil
+}
+
+// DeleteOrder to delete order by ID
+func (r *OrderRepository) DeleteOrder(ctx context.Context, id int, db *gorm.DB) error {
+	if err := db.WithContext(ctx).Delete(&entity.Order{}, id).Error; err != nil {
+		return err
+	}
+	return nil
 }

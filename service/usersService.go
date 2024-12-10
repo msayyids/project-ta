@@ -35,10 +35,6 @@ func NewUserService(ur repository.UserRepositoryInj, db *gorm.DB, v validator.Va
 }
 
 func (s *UserServices) CreateUser(ctx context.Context, userReq entity.UserRequest) (entity.Users, error) {
-	err := s.Validator.Struct(userReq)
-	if err != nil {
-		return entity.Users{}, err
-	}
 
 	tx := s.DB.Begin()
 

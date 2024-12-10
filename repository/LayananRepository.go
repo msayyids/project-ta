@@ -3,44 +3,48 @@ package repository
 import (
 	"context"
 	"project-ta/entity"
-	"project-ta/helper"
 
-	"github.com/jmoiron/sqlx"
+	"gorm.io/gorm"
 )
 
-type LayananRepositories struct{}
-
 type LayananRepositoryInj interface {
-	AddLayanan(ctx context.Context, LayananReq entity.LayananRequest, db sqlx.Tx) (entity.Layanan, error)
-	FindAll(ctx context.Context, db sqlx.Tx) ([]entity.Layanan, error)
-	EditById(ctx context.Context, id int, db *sqlx.Tx, layanan entity.LayananRequest) (entity.Layanan, error)
-	FindById(ctx context.Context, id int, db sqlx.Tx) (entity.Layanan, error)
-	DeleteById(ctx context.Context, id int, db *sqlx.Tx) error
+	AddLayanan(ctx context.Context, LayananReq entity.LayananRequest, db *gorm.DB) (entity.Layanan, error)
+	FindAll(ctx context.Context, db *gorm.DB) ([]entity.Layanan, error)
+	EditById(ctx context.Context, id int, db *gorm.DB, layanan entity.LayananRequest) (entity.Layanan, error)
+	FindById(ctx context.Context, id int, db *gorm.DB) (entity.Layanan, error)
+	DeleteById(ctx context.Context, id int, db *gorm.DB) error
 }
+
+type LayananRepository struct{}
 
 func NewLayananRepository() LayananRepositoryInj {
-	return LayananRepositories{}
+	return LayananRepository{}
 }
 
-func (l LayananRepositories) AddLayanan(ctx context.Context, LayananReq entity.LayananRequest, db sqlx.Tx) (entity.Layanan, error) {
-	sqlQuery := `INSERT INTO layanan (nama,deskripsi) VALUES ($1,$2) RETURNING *`
+func (l LayananRepository) AddLayanan(ctx context.Context, LayananReq entity.LayananRequest, db *gorm.DB) (entity.Layanan, error) {
+	layanan := entity.Layanan{
+		Nama:      LayananReq.Nama,
+		Deskripsi: LayananReq.Desksripsi,
+		Harga:     LayananReq.Harga,
+	}
 
-	var layanan entity.Layanan
-
-	err := db.QueryRowxContext(ctx, sqlQuery, LayananReq.Nama, LayananReq.Harga, LayananReq.Desksripsi).StructScan(&layanan)
-	helper.PanicIfError(err)
+	err := db.Create(&layanan).Error
+	if err != nil {
+		return entity.Layanan{}, err
+	}
 
 	return layanan, nil
 }
 
-func (l LayananRepositories) EditById(ctx context.Context, id int, db *sqlx.Tx, layanan entity.LayananRequest) (entity.Layanan, error) {
-	sqlQuery := `UPDATE layanan
-                 SET nama = $1, deskripsi = $2, harga = $3
-                 WHERE id = $4
-                 RETURNING id, nama, deskripsi, harga;`
+func (l LayananRepository) EditById(ctx context.Context, id int, db *gorm.DB, layanan entity.LayananRequest) (entity.Layanan, error) {
+	updatedLayanan := entity.Layanan{
+		ID:        id,
+		Nama:      layanan.Nama,
+		Deskripsi: layanan.Desksripsi,
+		Harga:     layanan.Harga,
+	}
 
-	var updatedLayanan entity.Layanan
-	err := db.GetContext(ctx, &updatedLayanan, sqlQuery, layanan.Nama, layanan.Desksripsi, layanan.Harga, id)
+	err := db.Save(&updatedLayanan).Error
 	if err != nil {
 		return entity.Layanan{}, err
 	}
@@ -48,10 +52,9 @@ func (l LayananRepositories) EditById(ctx context.Context, id int, db *sqlx.Tx, 
 	return updatedLayanan, nil
 }
 
-func (l LayananRepositories) DeleteById(ctx context.Context, id int, db *sqlx.Tx) error {
-	sqlQuery := `DELETE FROM layanan WHERE id = $1;`
-
-	_, err := db.ExecContext(ctx, sqlQuery, id)
+func (l LayananRepository) DeleteById(ctx context.Context, id int, db *gorm.DB) error {
+	var layanan entity.Layanan
+	err := db.Delete(&layanan, id).Error
 	if err != nil {
 		return err
 	}
@@ -59,23 +62,22 @@ func (l LayananRepositories) DeleteById(ctx context.Context, id int, db *sqlx.Tx
 	return nil
 }
 
-func (l LayananRepositories) FindById(ctx context.Context, id int, db sqlx.Tx) (entity.Layanan, error) {
-	sqlQuery := `SELECT * FROM layanan WHERE id = $1;`
+func (l LayananRepository) FindById(ctx context.Context, id int, db *gorm.DB) (entity.Layanan, error) {
+	var layanan entity.Layanan
+	err := db.First(&layanan, id).Error
+	if err != nil {
+		return entity.Layanan{}, err
+	}
 
-	var layananById entity.Layanan
-
-	err := db.QueryRowxContext(ctx, sqlQuery, id).StructScan(&layananById)
-	helper.PanicIfError(err)
-	return layananById, nil
+	return layanan, nil
 }
 
-func (l LayananRepositories) FindAll(ctx context.Context, db sqlx.Tx) ([]entity.Layanan, error) {
-	sqlQuery := `SELECT * FROM layanan;`
-
+func (l LayananRepository) FindAll(ctx context.Context, db *gorm.DB) ([]entity.Layanan, error) {
 	var layanan []entity.Layanan
-
-	err := db.SelectContext(ctx, &layanan, sqlQuery)
-	helper.PanicIfError(err)
+	err := db.Find(&layanan).Error
+	if err != nil {
+		return nil, err
+	}
 
 	return layanan, nil
 }
