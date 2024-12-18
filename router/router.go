@@ -75,11 +75,11 @@ func NewRouter() *httprouter.Router {
 	router.POST("/api/steam/order/cash", userMiddleware.AuthUser(orderControllerr.CreateOrderCash))
 	// router.POST("/api/steam/payment", paymentController.CreatePaymentEmoney)
 
-	router.POST("/api/steam/pengeluaran", pengeluaranController.CreatePengeluaran)
-	router.GET("/api/steam/pengeluaran", pengeluaranController.GetPengeluaran)
-	router.GET("/api/steam/pengeluaran/:id", pengeluaranController.GetPengeluaranById)
-	router.PUT("/api/steam/pengeluaran/:id", pengeluaranController.UpdatePengeluaran)
-	router.DELETE("/api/steam/pengeluaran/:id", pengeluaranController.DeletePengeluaran)
+	router.POST("/api/steam/pengeluaran", userMiddleware.AuthUser(pengeluaranController.CreatePengeluaran))
+	router.GET("/api/steam/pengeluaran", userMiddleware.AuthUser(pengeluaranController.GetPengeluaran))
+	router.GET("/api/steam/pengeluaran/:id", userMiddleware.AuthUser(pengeluaranController.GetPengeluaranById))
+	router.PUT("/api/steam/pengeluaran/:id", adminMiddleware.AuthAdmin(pengeluaranController.UpdatePengeluaran))
+	router.DELETE("/api/steam/pengeluaran/:id", adminMiddleware.AuthAdmin(pengeluaranController.DeletePengeluaran))
 
 	router.GET("/api/steam/keuntungan/hari/:tanggal", adminMiddleware.AuthAdmin(keuntunganController.GetKeuntunganByDateEndpoint))
 	router.GET("/api/steam/keuntungan/bulan/:tahun/:bulan", adminMiddleware.AuthAdmin(keuntunganController.GetKeuntunganByMonthEndpoint))

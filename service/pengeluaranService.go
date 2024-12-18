@@ -75,8 +75,6 @@ func (pr *PengeluaranService) FindAllPengeluaran(ctx context.Context) ([]entity.
 		return nil, fmt.Errorf("error saat mencari semua pengeluaran: %w", err)
 	}
 
-	tx.Commit()
-
 	return pengeluarans, nil
 }
 

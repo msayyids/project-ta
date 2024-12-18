@@ -1,7 +1,9 @@
 package controller
 
 import (
+	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
 	"net/http"
+	"project-ta/config"
 	"project-ta/entity"
 	"project-ta/helper"
 	"project-ta/service"
@@ -30,11 +32,58 @@ func NewPengeluaranController(p service.PengeluaranServiceInj) PengeluaranContro
 }
 
 func (pc PengeluaranController) CreatePengeluaran(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
-	var requestBody entity.PengeluaranRequest
+	// Initialize Cloudinary
+	cld := config.InitializeCloudinary()
 
-	helper.RequestBody(r, &requestBody)
+	// Parse file from form-data
+	file, _, err := r.FormFile("bukti_pengeluaran")
+	if err != nil {
+		helper.ResponseBody(w, entity.WebResponse{
+			Code:    http.StatusBadRequest,
+			Message: "BAD REQUEST",
+			Data:    "Bukti_pengeluaran is required and must be a valid file",
+		}, http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	// Upload file to Cloudinary
+	resp, err := cld.Upload.Upload(r.Context(), file, uploader.UploadParams{})
+	if err != nil {
+		helper.ResponseBody(w, entity.WebResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "INTERNAL SERVER ERROR",
+			Data:    "Failed to upload file",
+		}, http.StatusInternalServerError)
+		return
+	}
+
+	// Convert form values
+	usersID, err := strconv.Atoi(r.FormValue("users_id"))
+	if err != nil {
+		http.Error(w, "Invalid users_id", http.StatusBadRequest)
+		return
+	}
+
+	total, err := strconv.Atoi(r.FormValue("total"))
+	if err != nil {
+		http.Error(w, "Invalid total", http.StatusBadRequest)
+		return
+	}
+
+	// Create request object
+	request := entity.PengeluaranRequest{
+		Nama_pengeluaran:  r.FormValue("nama_pengeluaran"),
+		Keterangan:        r.FormValue("keterangan"),
+		Users_id:          usersID,
+		Total:             total,
+		Bukti_pengeluaran: resp.SecureURL, // Use SecureURL for HTTPS links
+		Tipe_pengeluaran:  r.FormValue("tipe_pengeluaran"),
+	}
+
+	// Validate request object
 	validate := validator.New()
-	if err := validate.Struct(&requestBody); err != nil {
+	if err := validate.Struct(&request); err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
 			Code:    http.StatusBadRequest,
 			Message: "BAD REQUEST",
@@ -43,24 +92,24 @@ func (pc PengeluaranController) CreatePengeluaran(w http.ResponseWriter, r *http
 		return
 	}
 
-	newPengeluaran, err := pc.P.CreatePengeluaran(r.Context(), requestBody)
+	// Create Pengeluaran
+	newPengeluaran, err := pc.P.CreatePengeluaran(r.Context(), request)
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
 			Code:    http.StatusInternalServerError,
-			Message: "Internal Server Error",
-			Data:    "Failed to create user",
+			Message: "INTERNAL SERVER ERROR",
+			Data:    "Failed to create pengeluaran",
 		}, http.StatusInternalServerError)
 		return
 	}
 
+	// Send success response
 	response := entity.WebResponse{
 		Code:    http.StatusCreated,
 		Message: "created",
 		Data:    newPengeluaran,
 	}
-
 	helper.ResponseBody(w, response, http.StatusCreated)
-
 }
 
 func (pc PengeluaranController) GetPengeluaran(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
