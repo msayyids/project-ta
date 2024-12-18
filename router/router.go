@@ -44,7 +44,9 @@ func NewRouter() *httprouter.Router {
 	pengeluranService := service.NewPengeluaranService(db, pengeluaranRepo)
 	pengeluaranController := controller.NewPengeluaranController(pengeluranService)
 
-	keuntunganController := controller.NewKeuntunganCntroller(*db)
+	keuntunganRepo := repository.NewKeuntunganRepository()
+	keuntunganService := service.NewKeuntunganService(db, keuntunganRepo)
+	keuntunganController := controller.NewKeuntunganCntroller(keuntunganService)
 
 	// // middleware
 	adminMiddleware := middleware.NewAuthAdmin(userService, layananService)

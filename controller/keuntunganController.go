@@ -4,20 +4,20 @@ import (
 	"net/http"
 	"project-ta/entity"
 	"project-ta/helper"
+	"project-ta/service"
 	"strconv"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"gorm.io/gorm"
 )
 
 type KeuntunganController struct {
-	DB *gorm.DB
+	Ks service.KeuntunganServiceInj
 }
 
-func NewKeuntunganCntroller(db gorm.DB) KeuntunganController {
+func NewKeuntunganCntroller(ks service.KeuntunganServiceInj) KeuntunganController {
 	return KeuntunganController{
-		DB: &db,
+		Ks: ks,
 	}
 }
 
@@ -32,7 +32,7 @@ func (c KeuntunganController) GetKeuntunganByLast7DaysEndpoint(w http.ResponseWr
 		return
 	}
 
-	keuntungan, err := GetKeuntunganByLast7Days(c.DB, date)
+	keuntungan, err := c.Ks.GetKeuntunganByLast7Days(r.Context(), date)
 	if err != nil {
 		http.Error(w, "Error fetching keuntungan: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -61,7 +61,7 @@ func (c KeuntunganController) GetKeuntunganByMonthEndpoint(w http.ResponseWriter
 		return
 	}
 
-	keuntungan, err := GetKeuntunganByMonth(c.DB, year, month)
+	keuntungan, err := c.Ks.GetKeuntunganByMonth(r.Context(), year, month)
 	if err != nil {
 		http.Error(w, "Error fetching keuntungan: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -83,7 +83,7 @@ func (c KeuntunganController) GetKeuntunganByDateEndpoint(w http.ResponseWriter,
 		return
 	}
 
-	keuntungan, err := GetKeuntunganByDate(c.DB, date)
+	keuntungan, err := c.Ks.GetKeuntunganByDate(r.Context(), date)
 	if err != nil {
 		http.Error(w, "Error fetching keuntungan: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -104,88 +104,4 @@ func (c KeuntunganController) GetKeuntunganByDateEndpoint(w http.ResponseWriter,
 		Message: "OK",
 		Data:    keuntungan,
 	}, http.StatusOK)
-}
-
-func GetKeuntunganByDate(db *gorm.DB, date time.Time) ([]entity.KeuntunganResponse, error) {
-	var keuntungan []entity.KeuntunganResponse
-
-	// Truncate waktu untuk memastikan hanya tanggal yang diperhitungkan, tanpa waktu
-	startOfDay := date.Truncate(24 * time.Hour) // Jam diatur ke 00:00:00
-	endOfDay := startOfDay.Add(24 * time.Hour)  // Jam diatur ke 23:59:59
-
-	// Query untuk mendapatkan keuntungan pada satu hari tertentu
-	err := db.Table("orders o").
-		Select("DATE(o.tanggal_order) AS tanggal, "+
-			"SUM(o.total) AS total_pemasukan, "+
-			"SUM(COALESCE(ex.total, 0)) AS total_pengeluaran, "+
-			"SUM(o.total) - SUM(COALESCE(ex.total, 0)) AS keuntungan, "+
-			"CASE WHEN SUM(o.total) - SUM(COALESCE(ex.total, 0)) < 0 THEN 'MINUS' ELSE 'PLUS' END AS status_keuntungan").
-		Joins("JOIN payments p ON o.id = p.order_id").
-		// Gabungkan dengan pengeluaran berdasarkan tanggal
-		Joins("LEFT JOIN pengeluaran ex ON DATE(o.tanggal_order) = DATE(ex.created_at)").
-		Where("o.status = ? AND p.status = ? AND o.tanggal_order BETWEEN ? AND ?", "PAID", "PAID", startOfDay, endOfDay).
-		Group("DATE(o.tanggal_order)").
-		Order("tanggal DESC").
-		Scan(&keuntungan).Error
-
-	if err != nil {
-		return nil, err
-	}
-
-	return keuntungan, nil
-}
-
-func GetKeuntunganByMonth(db *gorm.DB, year, month int) ([]entity.KeuntunganResponseMonthly, error) {
-	var keuntungan []entity.KeuntunganResponseMonthly
-
-	// Menentukan start dan end date untuk bulan yang diminta
-	startOfMonth := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.Local)
-	endOfMonth := startOfMonth.AddDate(0, 1, 0).Add(-time.Second) // Menghitung akhir bulan
-
-	err := db.Table("orders o").
-		Select("EXTRACT(YEAR FROM o.tanggal_order) AS tahun, EXTRACT(MONTH FROM o.tanggal_order) AS bulan, "+
-			"SUM(o.total) AS total_pemasukan, SUM(COALESCE(ex.total, 0)) AS total_pengeluaran, "+
-			"SUM(o.total) - SUM(COALESCE(ex.total, 0)) AS keuntungan, "+
-			"CASE WHEN SUM(o.total) - SUM(COALESCE(ex.total, 0)) < 0 THEN 'MINUS' ELSE 'PLUS' END AS status_keuntungan").
-		Joins("JOIN payments p ON o.id = p.order_id").
-		// Gabungkan dengan pengeluaran berdasarkan bulan
-		Joins("LEFT JOIN pengeluaran ex ON EXTRACT(MONTH FROM o.tanggal_order) = EXTRACT(MONTH FROM ex.created_at) AND EXTRACT(YEAR FROM o.tanggal_order) = EXTRACT(YEAR FROM ex.created_at)").
-		Where("o.status = ? AND p.status = ? AND o.tanggal_order BETWEEN ? AND ?", "PAID", "PAID", startOfMonth, endOfMonth).
-		Group("EXTRACT(YEAR FROM o.tanggal_order), EXTRACT(MONTH FROM o.tanggal_order)").
-		Order("tahun DESC, bulan DESC").
-		Scan(&keuntungan).Error
-
-	if err != nil {
-		return nil, err
-	}
-
-	// Pastikan hasil yang dikembalikan sesuai dengan bulan yang diminta
-	return keuntungan, nil
-}
-
-func GetKeuntunganByLast7Days(db *gorm.DB, date time.Time) ([]entity.KeuntunganPer7HariResponse, error) {
-	var keuntungan []entity.KeuntunganPer7HariResponse
-
-	// Menghitung tanggal 7 hari yang lalu
-	sevenDaysAgo := date.AddDate(0, 0, -7)
-
-	err := db.Table("orders o").
-		Select("DATE(o.tanggal_order) AS tanggal, "+
-			"SUM(o.total) AS total_pemasukan, "+
-			"SUM(COALESCE(ex.total, 0)) AS total_pengeluaran, "+
-			"SUM(o.total) - SUM(COALESCE(ex.total, 0)) AS keuntungan, "+
-			"CASE WHEN SUM(o.total) - SUM(COALESCE(ex.total, 0)) < 0 THEN 'MINUS' ELSE 'PLUS' END AS status_keuntungan").
-		Joins("JOIN payments p ON o.id = p.order_id").
-		// Gabungkan dengan pengeluaran berdasarkan tanggal
-		Joins("LEFT JOIN pengeluaran ex ON DATE(o.tanggal_order) = DATE(ex.created_at)").
-		Where("o.status = ? AND p.status = ? AND o.tanggal_order BETWEEN ? AND ?", "PAID", "PAID", sevenDaysAgo, date).
-		Group("DATE(o.tanggal_order)").
-		Order("tanggal DESC").
-		Scan(&keuntungan).Error
-
-	if err != nil {
-		return nil, err
-	}
-
-	return keuntungan, nil
 }
