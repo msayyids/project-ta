@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/midtrans/midtrans-go/snap"
 	"net/http"
 	"os"
 	"project-ta/entity"
@@ -54,7 +55,7 @@ func (oc *OrderController) CreateOrderCashless(w http.ResponseWriter, r *http.Re
 	midtrans.Environment = midtrans.Sandbox
 
 	// Inisialisasi dan kembalikan client
-	C := coreapi.Client{}
+	C := snap.Client{}
 	C.New(serverKey, midtrans.Sandbox)
 	var order entity.OrderReq
 
@@ -68,23 +69,22 @@ func (oc *OrderController) CreateOrderCashless(w http.ResponseWriter, r *http.Re
 
 	strId := strconv.Itoa(newOrder.ID)
 
-	chargeReq := &coreapi.ChargeReq{
-		PaymentType: coreapi.PaymentTypeQris,
+	chargeReq := &snap.Request{
 		TransactionDetails: midtrans.TransactionDetails{
 			OrderID:  strId,
 			GrossAmt: int64(newOrder.Total),
 		},
 	}
 
-	coreApiRes, _ := C.ChargeTransaction(chargeReq)
+	coreApiRes, _ := C.CreateTransaction(chargeReq)
 
-	err = oc.Service.UpdatePaymentURL(r.Context(), newOrder.ID, coreApiRes.Actions[0].URL)
+	err = oc.Service.UpdatePaymentURL(r.Context(), newOrder.ID, coreApiRes.RedirectURL)
 	if err != nil {
 		http.Error(w, "Failed to update payment URL and QR data", http.StatusInternalServerError)
 		return
 	}
 
-	newOrder.Payment_url = coreApiRes.Actions[0].URL
+	newOrder.Payment_url = coreApiRes.RedirectURL
 	response := entity.WebResponse{
 		Code:    http.StatusCreated,
 		Message: "Order Created Successfully",

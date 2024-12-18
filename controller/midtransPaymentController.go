@@ -62,8 +62,6 @@ func (pc *PaymentController) VerifyPayment(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Parse data dari response
-
 	// Periksa status transaksi
 	switch transactionStatusResp.TransactionStatus {
 	case "capture", "settlement":
@@ -75,7 +73,7 @@ func (pc *PaymentController) VerifyPayment(w http.ResponseWriter, r *http.Reques
 		id, _ := strconv.Atoi(orderId)
 
 		amountFloat, _ := strconv.ParseFloat(transactionStatusResp.GrossAmount, 64)
-	
+
 		subtotalInt := int(amountFloat)
 
 		transactionTime, _ := time.Parse("2006-01-02 15:04:05", transactionStatusResp.TransactionTime)
@@ -86,6 +84,14 @@ func (pc *PaymentController) VerifyPayment(w http.ResponseWriter, r *http.Reques
 			return
 		}
 
+		var transferType string
+		if len(transactionStatusResp.VaNumbers) > 0 {
+			bankName := transactionStatusResp.VaNumbers[0].Bank
+			transferType = transactionStatusResp.PaymentType + " - " + bankName
+		} else {
+			transferType = transactionStatusResp.PaymentType
+		}
+
 		payment := &entity.Payment{
 			OrderID:       updatedOrder.ID,
 			RedirectURL:   updatedOrder.Payment_url,
@@ -93,7 +99,7 @@ func (pc *PaymentController) VerifyPayment(w http.ResponseWriter, r *http.Reques
 			TransactionID: transactionStatusResp.TransactionID,
 			Subtotal:      subtotalInt,
 			CreatedAt:     transactionTime,
-			TransferType:  transactionStatusResp.PaymentType,
+			TransferType:  transferType,
 			Notification:  "pembayaran berhasil",
 		}
 
