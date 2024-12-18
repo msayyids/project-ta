@@ -31,18 +31,17 @@ func NewPengeluaranController(p service.PengeluaranServiceInj) PengeluaranContro
 
 func (pc PengeluaranController) CreatePengeluaran(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
 	var requestBody entity.PengeluaranRequest
-	validate := validator.New()
 
-	if err := validate.Struct(requestBody); err != nil {
+	helper.RequestBody(r, &requestBody)
+	validate := validator.New()
+	if err := validate.Struct(&requestBody); err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
 			Code:    http.StatusBadRequest,
 			Message: "BAD REQUEST",
-			Data:    "INVALID INPUT",
+			Data:    err.Error(),
 		}, http.StatusBadRequest)
 		return
 	}
-
-	helper.RequestBody(r, &requestBody)
 
 	newPengeluaran, err := pc.P.CreatePengeluaran(r.Context(), requestBody)
 	if err != nil {

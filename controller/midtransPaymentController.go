@@ -33,7 +33,6 @@ func NewPaymentController(
 }
 
 func (pc *PaymentController) VerifyPayment(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	// Pastikan MIDTRANS_SERVER_KEY tersedia
 	serverKey := os.Getenv("MIDTRANS_SERVER_KEY")
 	if serverKey == "" {
 		helper.ResponseBody(w, "Server Key not found", http.StatusInternalServerError)
@@ -55,14 +54,12 @@ func (pc *PaymentController) VerifyPayment(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Cek status transaksi menggunakan orderId
 	transactionStatusResp, err := pc.C.CheckTransaction(orderId)
 	if err != nil || transactionStatusResp == nil {
 		helper.ResponseBody(w, "Error checking transaction status: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Periksa status transaksi
 	switch transactionStatusResp.TransactionStatus {
 	case "capture", "settlement":
 		if transactionStatusResp.TransactionStatus == "capture" && transactionStatusResp.FraudStatus != "accept" {

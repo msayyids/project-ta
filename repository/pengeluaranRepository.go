@@ -25,7 +25,14 @@ func NewPengeluaranRepository() PengeluaranRepositoryInj {
 
 func (r *pengeluaranRepository) AddPengeluaran(ctx context.Context, pengeluaran entity.PengeluaranRequest, db *gorm.DB) (entity.Pengeluaran, error) {
 	var newPengeluaran entity.Pengeluaran
-	// Create menggunakan GORM
+
+	newPengeluaran.Nama_pengeluaran = pengeluaran.Nama_pengeluaran
+	newPengeluaran.Keterangan = pengeluaran.Keterangan
+	newPengeluaran.Users_id = pengeluaran.Users_id
+	newPengeluaran.Total = pengeluaran.Total
+	newPengeluaran.Bukti_pengeluaran = pengeluaran.Bukti_pengeluaran
+	newPengeluaran.Tipe_pengeluaran = pengeluaran.Tipe_pengeluaran
+
 	err := db.WithContext(ctx).Create(&newPengeluaran).Error
 	if err != nil {
 		return entity.Pengeluaran{}, fmt.Errorf("error creating pengeluaran: %w", err)

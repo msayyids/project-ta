@@ -63,7 +63,6 @@ func (s *OrderService) CreateOrder(ctx context.Context, order entity.OrderReq) (
 	// 	return entity.Order{}, err
 	// }
 
-	// Mulai transaksi
 	tx := s.DB.Begin()
 
 	findLayanan, err := s.LR.FindById(ctx, order.LayananID, tx)
