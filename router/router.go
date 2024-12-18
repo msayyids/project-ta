@@ -83,7 +83,7 @@ func NewRouter() *httprouter.Router {
 	router.GET("/api/steam/labarugi/bulan/:tahun/:bulan", adminMiddleware.AuthAdmin(keuntunganController.GetKeuntunganByMonthEndpoint))
 	router.GET("/api/steam/labarugi/minggu/:tanggal", adminMiddleware.AuthAdmin(keuntunganController.GetKeuntunganByLast7DaysEndpoint))
 
-	router.POST("/webhook", paymentController.VerifyPayment)
+	router.POST("/webhooks", paymentController.VerifyPayment)
 
 	router.PanicHandler = helper.PanicHandlerWrapper
 

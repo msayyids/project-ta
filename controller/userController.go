@@ -93,7 +93,6 @@ func (uc UserController) Login(w http.ResponseWriter, r *http.Request, param htt
 		return
 	}
 
-	// Create JWT token
 	token := helper.CreateJWT(jwt.MapClaims{
 		"id":   loggedInUser.ID,
 		"role": loggedInUser.Role,
@@ -105,7 +104,7 @@ func (uc UserController) Login(w http.ResponseWriter, r *http.Request, param htt
 		Data:    token,
 	}
 
-	helper.ResponseBody(w, response, http.StatusCreated)
+	helper.ResponseBody(w, response, http.StatusOK)
 }
 
 func (uc UserController) GetUser(w http.ResponseWriter, r *http.Request, param httprouter.Params) {

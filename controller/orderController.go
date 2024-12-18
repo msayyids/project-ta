@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"os"
 	"project-ta/entity"
 	"project-ta/helper"
 	"project-ta/service"
@@ -30,15 +31,6 @@ func NewOrderController(service service.OrderServiceInj, c coreapi.Client, v val
 func (oc *OrderController) CreateOrderCash(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var order entity.OrderReq
 
-	// if err := oc.V.Struct(order); err != nil {
-	// 	helper.ResponseBody(w, entity.WebResponse{
-	// 		Code:    http.StatusBadRequest,
-	// 		Message: "BAD REQUEST",
-	// 		Data:    "INVALID INPUT",
-	// 	}, http.StatusBadRequest)
-	// 	return
-	// }
-
 	helper.RequestBody(r, &order)
 
 	newOrder, err := oc.Service.CreateOrder(r.Context(), order)
@@ -57,6 +49,13 @@ func (oc *OrderController) CreateOrderCash(w http.ResponseWriter, r *http.Reques
 }
 
 func (oc *OrderController) CreateOrderCashless(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	serverKey := os.Getenv("MIDTRANS_SERVER_KEY")
+	midtrans.ServerKey = serverKey
+	midtrans.Environment = midtrans.Sandbox
+
+	// Inisialisasi dan kembalikan client
+	C := coreapi.Client{}
+	C.New(serverKey, midtrans.Sandbox)
 	var order entity.OrderReq
 
 	helper.RequestBody(r, &order)
@@ -77,7 +76,7 @@ func (oc *OrderController) CreateOrderCashless(w http.ResponseWriter, r *http.Re
 		},
 	}
 
-	coreApiRes, _ := oc.C.ChargeTransaction(chargeReq)
+	coreApiRes, _ := C.ChargeTransaction(chargeReq)
 
 	err = oc.Service.UpdatePaymentURL(r.Context(), newOrder.ID, coreApiRes.Actions[0].URL)
 	if err != nil {
@@ -85,15 +84,11 @@ func (oc *OrderController) CreateOrderCashless(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	newOrder.Payment_url = coreApiRes.Actions[0].URL
 	response := entity.WebResponse{
 		Code:    http.StatusCreated,
 		Message: "Order Created Successfully",
-		Data: map[string]interface{}{
-			"order":          newOrder,
-			"payment_link":   coreApiRes.Actions[0].URL,
-			"transaction_id": coreApiRes.TransactionID,
-			"qr_string":      coreApiRes.QRString,
-		},
+		Data:    newOrder,
 	}
 
 	helper.ResponseBody(w, response, http.StatusCreated)

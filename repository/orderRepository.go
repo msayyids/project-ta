@@ -15,12 +15,31 @@ type OrderRepositoryInj interface {
 	DeleteOrder(ctx context.Context, id int, db *gorm.DB) error
 	SaveOrder(ctx context.Context, order entity.Order, tx *gorm.DB) error
 	UpdatePaymentURL(ctx context.Context, orderID int, paymentURL string, db *gorm.DB) error
+	UpdateStatus(ctx context.Context, orderId int, status string, db *gorm.DB) (*entity.Order, error)
 }
 
 type OrderRepository struct{}
 
 func NewOrderRepository() OrderRepositoryInj {
 	return &OrderRepository{}
+}
+
+func (r *OrderRepository) UpdateStatus(ctx context.Context, orderId int, status string, db *gorm.DB) (*entity.Order, error) {
+	var order entity.Order
+
+	// Update kolom status dan ambil data yang diperbarui
+	if err := db.WithContext(ctx).Model(&order).
+		Where("id = ?", orderId).
+		Update("status", status).Error; err != nil {
+		return nil, err
+	}
+
+	// Ambil data order yang sudah diperbarui
+	if err := db.WithContext(ctx).First(&order, orderId).Error; err != nil {
+		return nil, err
+	}
+
+	return &order, nil
 }
 
 func (r *OrderRepository) UpdatePaymentURL(ctx context.Context, orderID int, paymentURL string, db *gorm.DB) error {

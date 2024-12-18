@@ -17,6 +17,7 @@ type OrderServiceInj interface {
 	UpdateOrder(ctx context.Context, id int, order entity.OrderReq) (entity.Order, error)
 	DeleteOrder(ctx context.Context, id int) error
 	UpdatePaymentURL(ctx context.Context, orderID int, paymentURL string) error
+	UpdateOrderStatus(ctx context.Context, orderId int, status string) (*entity.Order, error)
 }
 
 type OrderService struct {
@@ -33,6 +34,16 @@ func NewOrderService(db *gorm.DB, v *validator.Validate, repo repository.OrderRe
 		Repo:     repo,
 		LR:       lr,
 	}
+}
+
+func (s *OrderService) UpdateOrderStatus(ctx context.Context, orderId int, status string) (*entity.Order, error) {
+	// Panggil repository untuk update status
+	updatedOrder, err := s.Repo.UpdateStatus(ctx, orderId, status, s.DB)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedOrder, nil
 }
 
 func (s *OrderService) UpdatePaymentURL(ctx context.Context, orderID int, paymentURL string) error {
