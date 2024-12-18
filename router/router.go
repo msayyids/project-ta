@@ -79,9 +79,9 @@ func NewRouter() *httprouter.Router {
 	router.PUT("/api/steam/pengeluaran/:id", pengeluaranController.UpdatePengeluaran)
 	router.DELETE("/api/steam/pengeluaran/:id", pengeluaranController.DeletePengeluaran)
 
-	router.GET("/api/steam/labarugi/hari/:tanggal", adminMiddleware.AuthAdmin(keuntunganController.GetKeuntunganByDateEndpoint))
-	router.GET("/api/steam/labarugi/bulan/:tahun/:bulan", adminMiddleware.AuthAdmin(keuntunganController.GetKeuntunganByMonthEndpoint))
-	router.GET("/api/steam/labarugi/minggu/:tanggal", adminMiddleware.AuthAdmin(keuntunganController.GetKeuntunganByLast7DaysEndpoint))
+	router.GET("/api/steam/keuntungan/hari/:tanggal", adminMiddleware.AuthAdmin(keuntunganController.GetKeuntunganByDateEndpoint))
+	router.GET("/api/steam/keuntungan/bulan/:tahun/:bulan", adminMiddleware.AuthAdmin(keuntunganController.GetKeuntunganByMonthEndpoint))
+	router.GET("/api/steam/keuntungan/minggu/:tanggal", adminMiddleware.AuthAdmin(keuntunganController.GetKeuntunganByLast7DaysEndpoint))
 
 	router.POST("/webhooks", paymentController.VerifyPayment)
 

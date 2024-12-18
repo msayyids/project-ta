@@ -32,7 +32,6 @@ func (c KeuntunganController) GetKeuntunganByLast7DaysEndpoint(w http.ResponseWr
 		return
 	}
 
-	// Ambil data keuntungan dalam rentang 7 hari terakhir
 	keuntungan, err := GetKeuntunganByLast7Days(c.DB, date)
 	if err != nil {
 		http.Error(w, "Error fetching keuntungan: "+err.Error(), http.StatusInternalServerError)
@@ -96,6 +95,8 @@ func (c KeuntunganController) GetKeuntunganByDateEndpoint(w http.ResponseWriter,
 			Message: "NOT FOUND",
 			Data:    "DATA TIDAK DITEMUKAN",
 		}, http.StatusNotFound)
+
+		return
 	}
 
 	helper.ResponseBody(w, entity.WebResponse{
@@ -108,13 +109,20 @@ func (c KeuntunganController) GetKeuntunganByDateEndpoint(w http.ResponseWriter,
 func GetKeuntunganByDate(db *gorm.DB, date time.Time) ([]entity.KeuntunganResponse, error) {
 	var keuntungan []entity.KeuntunganResponse
 
-	startOfDay := date.Truncate(24 * time.Hour)
-	endOfDay := startOfDay.Add(24 * time.Hour)
+	// Truncate waktu untuk memastikan hanya tanggal yang diperhitungkan, tanpa waktu
+	startOfDay := date.Truncate(24 * time.Hour) // Jam diatur ke 00:00:00
+	endOfDay := startOfDay.Add(24 * time.Hour)  // Jam diatur ke 23:59:59
 
+	// Query untuk mendapatkan keuntungan pada satu hari tertentu
 	err := db.Table("orders o").
-		Select("DATE(o.tanggal_order) AS tanggal, SUM(o.total) AS total_pemasukan, SUM(COALESCE(ex.total, 0)) AS total_pengeluaran, SUM(o.total) - SUM(COALESCE(ex.total, 0)) AS keuntungan, CASE WHEN SUM(o.total) - SUM(COALESCE(ex.total, 0)) < 0 THEN 'MINUS' ELSE 'PLUS' END AS status_keuntungan").
+		Select("DATE(o.tanggal_order) AS tanggal, "+
+			"SUM(o.total) AS total_pemasukan, "+
+			"SUM(COALESCE(ex.total, 0)) AS total_pengeluaran, "+
+			"SUM(o.total) - SUM(COALESCE(ex.total, 0)) AS keuntungan, "+
+			"CASE WHEN SUM(o.total) - SUM(COALESCE(ex.total, 0)) < 0 THEN 'MINUS' ELSE 'PLUS' END AS status_keuntungan").
 		Joins("JOIN payments p ON o.id = p.order_id").
-		Joins("LEFT JOIN pengeluaran ex ON 1 = 1").
+		// Gabungkan dengan pengeluaran berdasarkan tanggal
+		Joins("LEFT JOIN pengeluaran ex ON DATE(o.tanggal_order) = DATE(ex.created_at)").
 		Where("o.status = ? AND p.status = ? AND o.tanggal_order BETWEEN ? AND ?", "PAID", "PAID", startOfDay, endOfDay).
 		Group("DATE(o.tanggal_order)").
 		Order("tanggal DESC").
@@ -140,7 +148,8 @@ func GetKeuntunganByMonth(db *gorm.DB, year, month int) ([]entity.KeuntunganResp
 			"SUM(o.total) - SUM(COALESCE(ex.total, 0)) AS keuntungan, "+
 			"CASE WHEN SUM(o.total) - SUM(COALESCE(ex.total, 0)) < 0 THEN 'MINUS' ELSE 'PLUS' END AS status_keuntungan").
 		Joins("JOIN payments p ON o.id = p.order_id").
-		Joins("LEFT JOIN pengeluaran ex ON 1 = 1"). // Ganti LeftJoin dengan Joins dan tambahkan LEFT
+		// Gabungkan dengan pengeluaran berdasarkan bulan
+		Joins("LEFT JOIN pengeluaran ex ON EXTRACT(MONTH FROM o.tanggal_order) = EXTRACT(MONTH FROM ex.created_at) AND EXTRACT(YEAR FROM o.tanggal_order) = EXTRACT(YEAR FROM ex.created_at)").
 		Where("o.status = ? AND p.status = ? AND o.tanggal_order BETWEEN ? AND ?", "PAID", "PAID", startOfMonth, endOfMonth).
 		Group("EXTRACT(YEAR FROM o.tanggal_order), EXTRACT(MONTH FROM o.tanggal_order)").
 		Order("tahun DESC, bulan DESC").
@@ -150,6 +159,7 @@ func GetKeuntunganByMonth(db *gorm.DB, year, month int) ([]entity.KeuntunganResp
 		return nil, err
 	}
 
+	// Pastikan hasil yang dikembalikan sesuai dengan bulan yang diminta
 	return keuntungan, nil
 }
 
@@ -159,7 +169,6 @@ func GetKeuntunganByLast7Days(db *gorm.DB, date time.Time) ([]entity.KeuntunganP
 	// Menghitung tanggal 7 hari yang lalu
 	sevenDaysAgo := date.AddDate(0, 0, -7)
 
-	// Query GORM untuk menghitung total pemasukan, total pengeluaran, dan keuntungan dalam rentang 7 hari
 	err := db.Table("orders o").
 		Select("DATE(o.tanggal_order) AS tanggal, "+
 			"SUM(o.total) AS total_pemasukan, "+
@@ -167,7 +176,8 @@ func GetKeuntunganByLast7Days(db *gorm.DB, date time.Time) ([]entity.KeuntunganP
 			"SUM(o.total) - SUM(COALESCE(ex.total, 0)) AS keuntungan, "+
 			"CASE WHEN SUM(o.total) - SUM(COALESCE(ex.total, 0)) < 0 THEN 'MINUS' ELSE 'PLUS' END AS status_keuntungan").
 		Joins("JOIN payments p ON o.id = p.order_id").
-		Joins("LEFT JOIN pengeluaran ex ON 1 = 1").
+		// Gabungkan dengan pengeluaran berdasarkan tanggal
+		Joins("LEFT JOIN pengeluaran ex ON DATE(o.tanggal_order) = DATE(ex.created_at)").
 		Where("o.status = ? AND p.status = ? AND o.tanggal_order BETWEEN ? AND ?", "PAID", "PAID", sevenDaysAgo, date).
 		Group("DATE(o.tanggal_order)").
 		Order("tanggal DESC").
