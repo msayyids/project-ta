@@ -1,6 +1,5 @@
 package controller
 
-import "C"
 import (
 	"github.com/midtrans/midtrans-go/snap"
 	"net/http"
@@ -35,7 +34,11 @@ func (oc *OrderController) CreateOrderCash(w http.ResponseWriter, r *http.Reques
 
 	newOrder, err := oc.Service.CreateOrder(r.Context(), order)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		helper.ResponseBody(w, entity.WebResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "internal server error",
+			Data:    nil,
+		}, http.StatusInternalServerError)
 		return
 	}
 
@@ -49,19 +52,18 @@ func (oc *OrderController) CreateOrderCash(w http.ResponseWriter, r *http.Reques
 }
 
 func (oc *OrderController) CreateOrderCashless(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	//serverKey := os.Getenv("MIDTRANS_SERVER_KEY")
-	//midtrans.ServerKey = serverKey
-	//midtrans.Environment = midtrans.Sandbox
-	//
-	//C := snap.Client{}
-	//C.New(serverKey, midtrans.Sandbox)
+
 	var order entity.OrderReq
 
 	helper.RequestBody(r, &order)
 
 	newOrder, err := oc.Service.CreateOrder(r.Context(), order)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		helper.ResponseBody(w, entity.WebResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "internal server error",
+			Data:    nil,
+		}, http.StatusInternalServerError)
 		return
 	}
 
@@ -104,7 +106,11 @@ func (oc *OrderController) FindById(w http.ResponseWriter, r *http.Request, ps h
 
 	order, err := oc.Service.FindById(r.Context(), id)
 	if err != nil {
-		http.Error(w, "Order Not Found", http.StatusNotFound)
+		helper.ResponseBody(w, entity.WebResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "internal server error",
+			Data:    nil,
+		}, http.StatusInternalServerError)
 		return
 	}
 
@@ -120,7 +126,11 @@ func (oc *OrderController) FindById(w http.ResponseWriter, r *http.Request, ps h
 func (oc *OrderController) FindAll(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	orders, err := oc.Service.FindAll(r.Context())
 	if err != nil {
-		http.Error(w, "Unable to retrieve orders", http.StatusInternalServerError)
+		helper.ResponseBody(w, entity.WebResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "internal server error",
+			Data:    nil,
+		}, http.StatusInternalServerError)
 		return
 	}
 
@@ -145,7 +155,11 @@ func (oc *OrderController) UpdateOrder(w http.ResponseWriter, r *http.Request, p
 
 	updatedOrder, err := oc.Service.UpdateOrder(r.Context(), id, order)
 	if err != nil {
-		http.Error(w, "Unable to update order", http.StatusInternalServerError)
+		helper.ResponseBody(w, entity.WebResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "internal server error",
+			Data:    nil,
+		}, http.StatusInternalServerError)
 		return
 	}
 

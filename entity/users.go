@@ -9,7 +9,7 @@ type Users struct {
 	Nama_depan    string    `gorm:"type:varchar(255);not null" json:"nama_depan"`
 	Nama_belakang string    `gorm:"type:varchar(255);not null" json:"nama_belakang"`
 	Role          string    `gorm:"type:role_type;not null" json:"role"`
-	Email         string    `gorm:"type:varchar(255);unique;not null" json:"email"`
+	Email         string    `gorm:"type:varchar(255);unique;not null" json:"email" validate:"required,unique,min=2,max=50"`
 	Password      string    `gorm:"type:varchar(255);not null" json:"-"`
 	No_telepon    string    `gorm:"type:varchar(12);not null" json:"no_telepon"`
 	Alamat        string    `gorm:"type:varchar(255);not null" json:"alamat"`
@@ -23,9 +23,9 @@ type UserRequest struct {
 	Nama_depan    string `json:"nama_depan" validate:"required,min=2,max=50"`
 	Nama_belakang string `json:"nama_belakang" validate:"required,min=2,max=50"`
 	Role          string `json:"role" validate:"required,oneof=admin karyawan"`
-	Email         string `json:"email" validate:"required,email"`
+	Email         string `json:"email" validate:"required,email,unique"`
 	Password      string `json:"password" validate:"required"`
-	No_telepon    string `json:"no_telepon" validate:"required"`
+	No_telepon    string `json:"no_telepon" validate:"required,unique"`
 	Alamat        string `json:"alamat" validate:"required"`
 	Gaji          int    `json:"gaji" validate:"required,gte=0"`
 	No_rekening   string `json:"no_rekening" validate:"required"`

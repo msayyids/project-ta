@@ -31,7 +31,7 @@ func NewRouter() *httprouter.Router {
 
 	orderRepo := repository.NewOrderRepository()
 	orderService := service.NewOrderService(db, validate, orderRepo, layananRepo)
-	orderControllerr := controller.NewOrderController(orderService, *snapAPIClient, *validate)
+	orderController := controller.NewOrderController(orderService, *snapAPIClient, *validate)
 
 	paymentRepo := repository.NewPaymentRepository()
 	paymentService := service.NewPaymentService(db, validate, paymentRepo, orderRepo, layananRepo)
@@ -63,12 +63,13 @@ func NewRouter() *httprouter.Router {
 	router.GET("/api/steam/layanan/:id", userMiddleware.AuthUser(layananController.FindLayananById))
 	router.PUT("/api/steam/layanan/:id", adminMiddleware.AuthAdmin(layananController.EditLayananById))
 
-	router.GET("/api/steam/order", orderControllerr.FindAll)
-	router.GET("/api/steam/order/:id", userMiddleware.AuthUser(orderControllerr.FindById))
-	router.PUT("/api/steam/order/:id", adminMiddleware.AuthAdmin(orderControllerr.UpdateOrder))
+	router.GET("/api/steam/order", orderController.FindAll)
+	router.GET("/api/steam/order/id/:id", userMiddleware.AuthUser(orderController.FindById))
+	router.PUT("/api/steam/order/id/:id", adminMiddleware.AuthAdmin(orderController.UpdateOrder))
+	router.GET("/api/steam/order/status/:status", userMiddleware.AuthUser(orderController.FindByStatus))
 
-	router.POST("/api/steam/order/cashless", userMiddleware.AuthUser(orderControllerr.CreateOrderCashless))
-	router.POST("/api/steam/order/cash", userMiddleware.AuthUser(orderControllerr.CreateOrderCash))
+	router.POST("/api/steam/order/cashless", userMiddleware.AuthUser(orderController.CreateOrderCashless))
+	router.POST("/api/steam/order/cash", userMiddleware.AuthUser(orderController.CreateOrderCash))
 	// router.POST("/api/steam/payment", paymentController.CreatePaymentEmoney)
 
 	router.GET("/api/steam/pengeluaran/hari/:tanggal", userMiddleware.AuthUser(pengeluaranController.FindPengeluaranByDate))
