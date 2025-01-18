@@ -8,6 +8,7 @@ import (
 	"project-ta/helper"
 	"project-ta/service"
 	"strconv"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/julienschmidt/httprouter"
@@ -23,6 +24,7 @@ type PengeluaranControllerInj interface {
 	GetPengeluaranById(w http.ResponseWriter, r *http.Request, param httprouter.Params)
 	UpdatePengeluaran(w http.ResponseWriter, r *http.Request, param httprouter.Params)
 	DeletePengeluaran(w http.ResponseWriter, r *http.Request, param httprouter.Params)
+	FindPengeluaranByDate(w http.ResponseWriter, r *http.Request, param httprouter.Params)
 }
 
 func NewPengeluaranController(p service.PengeluaranServiceInj) PengeluaranControllerInj {
@@ -32,10 +34,9 @@ func NewPengeluaranController(p service.PengeluaranServiceInj) PengeluaranContro
 }
 
 func (pc PengeluaranController) CreatePengeluaran(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
-	// Initialize Cloudinary
+
 	cld := config.InitializeCloudinary()
 
-	// Parse file from form-data
 	file, _, err := r.FormFile("bukti_pengeluaran")
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
@@ -204,6 +205,35 @@ func (pc PengeluaranController) UpdatePengeluaran(w http.ResponseWriter, r *http
 		Code:    http.StatusOK,
 		Message: "succses edit data pengeluaran",
 		Data:    editedPengeluaran,
+	}
+
+	helper.ResponseBody(w, response, http.StatusOK)
+
+}
+
+func (pc PengeluaranController) FindPengeluaranByDate(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
+	dateStr := param.ByName("tanggal")
+
+	date, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		http.Error(w, "Invalid date format. Use YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+
+	pengeluarans, err := pc.P.GetPengeluaranByDate(r.Context(), date)
+	if err != nil {
+		helper.ResponseBody(w, entity.WebResponse{
+			Code:    http.StatusNotFound,
+			Message: "not found",
+			Data:    nil,
+		}, http.StatusNotFound)
+		return
+	}
+
+	response := entity.WebResponse{
+		Code:    http.StatusOK,
+		Message: "success find pengeluaran",
+		Data:    pengeluarans,
 	}
 
 	helper.ResponseBody(w, response, http.StatusOK)

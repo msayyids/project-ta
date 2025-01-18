@@ -17,12 +17,12 @@ func InitializeCloudinary() *cloudinary.Cloudinary {
 	cloudName := os.Getenv("CLOUDINARY_CLOUD_NAME")
 
 	if apiKey == "" || apiSecret == "" || cloudName == "" {
-		log.Fatal("Cloudinary environment variables are not set properly")
+		log.Panic("Cloudinary environment variables are not set properly")
 	}
 
 	cld, err := cloudinary.NewFromParams(cloudName, apiKey, apiSecret)
 	if err != nil {
-		log.Fatalf("Failed to initialize Cloudinary: %v", err)
+		log.Panicf("Failed to initialize Cloudinary: %v", err)
 	}
 
 	return cld

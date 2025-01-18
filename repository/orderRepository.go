@@ -16,6 +16,7 @@ type OrderRepositoryInj interface {
 	SaveOrder(ctx context.Context, order entity.Order, tx *gorm.DB) error
 	UpdatePaymentURL(ctx context.Context, orderID int, paymentURL string, db *gorm.DB) error
 	UpdateStatus(ctx context.Context, orderId int, status string, db *gorm.DB) (*entity.Order, error)
+	FindByStatus(ctx context.Context, status string, db *gorm.DB) ([]entity.Order, error)
 }
 
 type OrderRepository struct{}
@@ -131,10 +132,18 @@ func (r *OrderRepository) UpdateOrder(ctx context.Context, id int, order entity.
 	return existingOrder, nil
 }
 
-// DeleteOrder to delete order by ID
 func (r *OrderRepository) DeleteOrder(ctx context.Context, id int, db *gorm.DB) error {
 	if err := db.WithContext(ctx).Delete(&entity.Order{}, id).Error; err != nil {
 		return err
 	}
 	return nil
+}
+
+func (r *OrderRepository) FindByStatus(ctx context.Context, status string, db *gorm.DB) ([]entity.Order, error) {
+	var orders []entity.Order
+	if err := db.WithContext(ctx).Find(&orders).Error; err != nil {
+		return nil, err
+	}
+	return orders, nil
+
 }

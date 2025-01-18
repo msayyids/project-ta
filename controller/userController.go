@@ -2,13 +2,13 @@ package controller
 
 import (
 	"fmt"
+	"github.com/go-playground/validator/v10"
 	"net/http"
 	"project-ta/entity"
 	"project-ta/helper"
 	"project-ta/service"
 	"strconv"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/julienschmidt/httprouter"
 )
@@ -34,6 +34,9 @@ func (uc UserController) CreateUsers(w http.ResponseWriter, r *http.Request, par
 	newUser := entity.UserRequest{}
 
 	validate := validator.New()
+
+	helper.RequestBody(r, &newUser)
+
 	err := validate.Struct(newUser)
 	if err != nil {
 
@@ -44,8 +47,6 @@ func (uc UserController) CreateUsers(w http.ResponseWriter, r *http.Request, par
 		}, http.StatusBadRequest)
 		return
 	}
-
-	helper.RequestBody(r, &newUser)
 
 	newUser.Password = helper.HashPassword(newUser.Password)
 

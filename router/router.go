@@ -12,17 +12,15 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// NewRouter initializes and returns a new router
 func NewRouter() *httprouter.Router {
 	router := httprouter.New()
 
-	// Initialize database connection
 	validate := validator.New()
 	db := config.ConnectDb()
 
 	coreAPIClient := config.SetupCoreAPIClient()
+	snapAPIClient := config.SetupSnapAPIClient()
 
-	// Initialize repository, service, and controller
 	userRepo := repository.NewUserRepository()
 	userService := service.NewUserService(userRepo, db, *validate)
 	userController := controller.NewUserController(userService)
@@ -33,12 +31,11 @@ func NewRouter() *httprouter.Router {
 
 	orderRepo := repository.NewOrderRepository()
 	orderService := service.NewOrderService(db, validate, orderRepo, layananRepo)
-	orderControllerr := controller.NewOrderController(orderService, *coreAPIClient, *validate)
+	orderControllerr := controller.NewOrderController(orderService, *snapAPIClient, *validate)
 
 	paymentRepo := repository.NewPaymentRepository()
 	paymentService := service.NewPaymentService(db, validate, paymentRepo, orderRepo, layananRepo)
 	paymentController := controller.NewPaymentController(paymentService, orderService, *coreAPIClient)
-	_ = paymentController
 
 	pengeluaranRepo := repository.NewPengeluaranRepository()
 	pengeluranService := service.NewPengeluaranService(db, pengeluaranRepo)
@@ -48,7 +45,6 @@ func NewRouter() *httprouter.Router {
 	keuntunganService := service.NewKeuntunganService(db, keuntunganRepo)
 	keuntunganController := controller.NewKeuntunganCntroller(keuntunganService)
 
-	// // middleware
 	adminMiddleware := middleware.NewAuthAdmin(userService, layananService)
 	userMiddleware := middleware.NewAuthUser(userService, layananService)
 	// karyawanMiddleware := middleware.NewAuthKaryawan(userService, layananService)
@@ -75,9 +71,10 @@ func NewRouter() *httprouter.Router {
 	router.POST("/api/steam/order/cash", userMiddleware.AuthUser(orderControllerr.CreateOrderCash))
 	// router.POST("/api/steam/payment", paymentController.CreatePaymentEmoney)
 
+	router.GET("/api/steam/pengeluaran/hari/:tanggal", userMiddleware.AuthUser(pengeluaranController.FindPengeluaranByDate))
 	router.POST("/api/steam/pengeluaran", userMiddleware.AuthUser(pengeluaranController.CreatePengeluaran))
 	router.GET("/api/steam/pengeluaran", userMiddleware.AuthUser(pengeluaranController.GetPengeluaran))
-	router.GET("/api/steam/pengeluaran/:id", userMiddleware.AuthUser(pengeluaranController.GetPengeluaranById))
+	router.GET("/api/steam/pengeluaran/id/:id", userMiddleware.AuthUser(pengeluaranController.GetPengeluaranById))
 	router.PUT("/api/steam/pengeluaran/:id", adminMiddleware.AuthAdmin(pengeluaranController.UpdatePengeluaran))
 	router.DELETE("/api/steam/pengeluaran/:id", adminMiddleware.AuthAdmin(pengeluaranController.DeletePengeluaran))
 

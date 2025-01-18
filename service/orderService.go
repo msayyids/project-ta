@@ -18,6 +18,7 @@ type OrderServiceInj interface {
 	DeleteOrder(ctx context.Context, id int) error
 	UpdatePaymentURL(ctx context.Context, orderID int, paymentURL string) error
 	UpdateOrderStatus(ctx context.Context, orderId int, status string) (*entity.Order, error)
+	FindByStatus(ctx context.Context, status string) ([]entity.Order, error)
 }
 
 type OrderService struct {
@@ -37,7 +38,7 @@ func NewOrderService(db *gorm.DB, v *validator.Validate, repo repository.OrderRe
 }
 
 func (s *OrderService) UpdateOrderStatus(ctx context.Context, orderId int, status string) (*entity.Order, error) {
-	// Panggil repository untuk update status
+
 	updatedOrder, err := s.Repo.UpdateStatus(ctx, orderId, status, s.DB)
 	if err != nil {
 		return nil, err
@@ -47,7 +48,7 @@ func (s *OrderService) UpdateOrderStatus(ctx context.Context, orderId int, statu
 }
 
 func (s *OrderService) UpdatePaymentURL(ctx context.Context, orderID int, paymentURL string) error {
-	// Call the repository to update the payment URL in the database
+
 	err := s.Repo.UpdatePaymentURL(ctx, orderID, paymentURL, s.DB)
 	if err != nil {
 		return err
@@ -58,10 +59,6 @@ func (s *OrderService) UpdatePaymentURL(ctx context.Context, orderID int, paymen
 
 // CreateOrder to add new order
 func (s *OrderService) CreateOrder(ctx context.Context, order entity.OrderReq) (entity.Order, error) {
-
-	// if err := s.Validate.Struct(order); err != nil {
-	// 	return entity.Order{}, err
-	// }
 
 	tx := s.DB.Begin()
 
@@ -85,26 +82,12 @@ func (s *OrderService) CreateOrder(ctx context.Context, order entity.OrderReq) (
 		PaymentType:        order.PaymentType,
 	}
 
-	// Menambahkan order ke database
 	newOrder, err := s.Repo.AddOrder(ctx, inputOrder, tx)
 	if err != nil {
 		tx.Rollback()
 		return entity.Order{}, err
 	}
 
-	// Cari layanan berdasarkan LayananID
-
-	// Menghitung total berdasarkan harga layanan dan jumlah order
-
-	// Membuat objek order baru dengan nilai total yang dihitung
-
-	// Simpan order baru ke database
-	// if err := s.Repo.SaveOrder(ctx, newOrder, tx); err != nil {
-	// 	tx.Rollback()
-	// 	return entity.Order{}, err
-	// }
-
-	// Commit transaksi setelah semua perubahan berhasil
 	if err := tx.Commit().Error; err != nil {
 		return entity.Order{}, err
 	}
@@ -113,19 +96,20 @@ func (s *OrderService) CreateOrder(ctx context.Context, order entity.OrderReq) (
 	return newOrder, nil
 }
 
-// FindById to get order by ID
 func (s *OrderService) FindById(ctx context.Context, id int) (entity.Order, error) {
 	return s.Repo.FindById(ctx, id, s.DB)
 }
 
-// FindAll to get all orders
 func (s *OrderService) FindAll(ctx context.Context) ([]entity.Order, error) {
 	return s.Repo.FindAll(ctx, s.DB)
 }
 
-// UpdateOrder to update an existing order
 func (s *OrderService) UpdateOrder(ctx context.Context, id int, order entity.OrderReq) (entity.Order, error) {
 	return s.Repo.UpdateOrder(ctx, id, order, s.DB)
+}
+
+func (s *OrderService) FindByStatus(ctx context.Context, status string) ([]entity.Order, error) {
+	return s.Repo.FindByStatus(ctx, status, s.DB)
 }
 
 // DeleteOrder to delete order by ID

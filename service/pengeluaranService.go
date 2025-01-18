@@ -6,6 +6,7 @@ import (
 	"project-ta/entity"
 	"project-ta/helper"
 	"project-ta/repository"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -21,6 +22,7 @@ type PengeluaranServiceInj interface {
 	FindPengeluaranById(ctx context.Context, id int) (entity.Pengeluaran, error)
 	FindAllPengeluaran(ctx context.Context) ([]entity.Pengeluaran, error)
 	DeletePengeluaran(ctx context.Context, id int) error
+	GetPengeluaranByDate(ctx context.Context, date time.Time) ([]entity.Pengeluaran, error)
 }
 
 func NewPengeluaranService(db *gorm.DB, pr repository.PengeluaranRepositoryInj) PengeluaranServiceInj {
@@ -28,6 +30,20 @@ func NewPengeluaranService(db *gorm.DB, pr repository.PengeluaranRepositoryInj) 
 		DB:              db,
 		PengeluaranRepo: pr,
 	}
+}
+
+func (pr *PengeluaranService) GetPengeluaranByDate(ctx context.Context, date time.Time) ([]entity.Pengeluaran, error) {
+
+	tx := pr.DB.Begin()
+
+	defer helper.CommitOrRollback(tx)
+
+	pengeluarans, err := pr.PengeluaranRepo.FindByDateRange(ctx, date, tx)
+	if err != nil {
+		return []entity.Pengeluaran{}, err
+	}
+
+	return pengeluarans, nil
 }
 
 func (pr *PengeluaranService) CreatePengeluaran(ctx context.Context, pengeluaranReq entity.PengeluaranRequest) (entity.Pengeluaran, error) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"project-ta/entity"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -14,6 +15,7 @@ type PengeluaranRepositoryInj interface {
 	FindPengeluaranById(ctx context.Context, id int, db *gorm.DB) (entity.Pengeluaran, error)
 	DeletePengeluaran(ctx context.Context, id int, db *gorm.DB) error
 	UpdatePengeluaran(ctx context.Context, id int, pengeluaran entity.PengeluaranRequest, db *gorm.DB) (entity.Pengeluaran, error)
+	FindByDateRange(ctx context.Context, date time.Time, db *gorm.DB) ([]entity.Pengeluaran, error)
 }
 
 type pengeluaranRepository struct {
@@ -21,6 +23,23 @@ type pengeluaranRepository struct {
 
 func NewPengeluaranRepository() PengeluaranRepositoryInj {
 	return &pengeluaranRepository{}
+}
+
+func (r *pengeluaranRepository) FindByDateRange(ctx context.Context, date time.Time, db *gorm.DB) ([]entity.Pengeluaran, error) {
+	var pengeluarans []entity.Pengeluaran
+
+	startOfDay := date.Truncate(24 * time.Hour)
+	endOfDay := startOfDay.Add(24 * time.Hour)
+
+	// Query database
+	err := db.WithContext(ctx).
+		Where("created_at BETWEEN ? AND ?", startOfDay, endOfDay).
+		Find(&pengeluarans).Error
+
+	if err != nil {
+		return nil, err
+	}
+	return pengeluarans, nil
 }
 
 func (r *pengeluaranRepository) AddPengeluaran(ctx context.Context, pengeluaran entity.PengeluaranRequest, db *gorm.DB) (entity.Pengeluaran, error) {

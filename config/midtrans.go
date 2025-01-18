@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/midtrans/midtrans-go/snap"
 	"os"
 
 	"github.com/midtrans/midtrans-go"
@@ -13,13 +14,24 @@ func SetupCoreAPIClient() *coreapi.Client {
 		panic("MIDTRANS_SERVER_KEY is not set in environment variables")
 	}
 
-	// Set global server key dan environment Midtrans
 	midtrans.ServerKey = serverKey
-	midtrans.Environment = midtrans.Sandbox // Gunakan Sandbox atau Production sesuai kebutuhan
+	midtrans.Environment = midtrans.Sandbox
 
-	// Inisialisasi dan kembalikan client
 	client := coreapi.Client{}
-	client.New(serverKey, midtrans.Sandbox) // Menggunakan serverKey dan environment yang sudah diatur
+	client.New(serverKey, midtrans.Sandbox) //
 
+	return &client
+}
+
+func SetupSnapAPIClient() *snap.Client {
+	serverKey := os.Getenv("MIDTRANS_SERVER_KEY")
+	if serverKey == "" {
+		panic("MIDTRANS_SERVER_KEY is not set in environment variables")
+	}
+
+	midtrans.ServerKey = serverKey
+	midtrans.Environment = midtrans.Sandbox
+	client := snap.Client{}
+	client.New(serverKey, midtrans.Sandbox)
 	return &client
 }

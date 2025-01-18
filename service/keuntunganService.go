@@ -26,7 +26,6 @@ func NewKeuntunganService(db *gorm.DB, repo repository.KeuntunganRepositoryInj) 
 	}
 }
 
-// Fungsi untuk mendapatkan keuntungan berdasarkan tanggal tertentu
 func (s *KeuntunganService) GetKeuntunganByDate(ctx context.Context, date time.Time) ([]entity.KeuntunganResponse, error) {
 
 	tx := s.DB.Begin()
@@ -40,7 +39,6 @@ func (s *KeuntunganService) GetKeuntunganByDate(ctx context.Context, date time.T
 	return keuntunganByDate, nil
 }
 
-// Fungsi untuk mendapatkan keuntungan berdasarkan bulan dan tahun
 func (s *KeuntunganService) GetKeuntunganByMonth(ctx context.Context, year, month int) ([]entity.KeuntunganResponseMonthly, error) {
 	tx := s.DB.Begin()
 	keuntunganByMonth, err := s.KeuntunganRepo.GetKeuntunganByMonth(ctx, tx, year, month)
@@ -53,7 +51,6 @@ func (s *KeuntunganService) GetKeuntunganByMonth(ctx context.Context, year, mont
 	return keuntunganByMonth, nil
 }
 
-// Fungsi untuk mendapatkan keuntungan dalam 7 hari terakhir
 func (s *KeuntunganService) GetKeuntunganByLast7Days(ctx context.Context, date time.Time) ([]entity.KeuntunganPer7HariResponse, error) {
 	tx := s.DB.Begin()
 	keuntunganBy7Day, err := s.KeuntunganRepo.GetKeuntunganByLast7Days(ctx, tx, date)

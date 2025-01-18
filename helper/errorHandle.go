@@ -58,7 +58,7 @@ func ErrorHandler(w http.ResponseWriter, statuscode int, message string) {
 			Data:    message,
 		}, http.StatusServiceUnavailable)
 
-	default: // Jika status code tidak terduga, gunakan internal server error
+	default:
 		ResponseBody(w, entity.WebResponse{
 			Code:    http.StatusInternalServerError,
 			Message: "INTERNAL SERVER ERROR",
@@ -69,7 +69,7 @@ func ErrorHandler(w http.ResponseWriter, statuscode int, message string) {
 
 // PanicHandlerWrapper adalah wrapper untuk menangani panic dan memanggil ErrorHandler
 func PanicHandlerWrapper(w http.ResponseWriter, r *http.Request, err interface{}) {
-	// Cetak stack trace untuk tujuan debug
+	// utntuk debug
 	fmt.Printf("PANIC: %v\n", err)
 	fmt.Printf("Stack Trace:\n%s\n", debug.Stack())
 

@@ -41,7 +41,6 @@ func (pc *PaymentController) VerifyPayment(w http.ResponseWriter, r *http.Reques
 
 	pc.C.New(serverKey, midtrans.Sandbox)
 
-	// Decode body request ke dalam map
 	var notificationPayload map[string]interface{}
 	if err := json.NewDecoder(r.Body).Decode(&notificationPayload); err != nil {
 		helper.ResponseBody(w, "Failed to decode notification payload", http.StatusBadRequest)

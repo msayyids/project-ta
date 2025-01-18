@@ -15,6 +15,6 @@ func main() {
 	serverAddress := fmt.Sprintf(":%d", port)
 	log.Printf("server is running on %s", serverAddress)
 	if err := http.ListenAndServe(serverAddress, apps); err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 }

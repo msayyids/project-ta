@@ -31,6 +31,8 @@ func NewLayananController(layananService service.LayananServiceInj, v validator.
 func (lc LayananController) CreateLayanan(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var layananRequest entity.LayananRequest
 
+	helper.RequestBody(r, &layananRequest)
+
 	err := lc.V.Struct(layananRequest)
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
@@ -40,8 +42,6 @@ func (lc LayananController) CreateLayanan(w http.ResponseWriter, r *http.Request
 		}, http.StatusBadRequest)
 		return
 	}
-
-	helper.RequestBody(r, &layananRequest)
 
 	newLayanan, err := lc.LayananService.AddLayanan(r.Context(), layananRequest)
 	if err != nil {

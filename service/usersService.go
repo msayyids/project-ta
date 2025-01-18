@@ -114,10 +114,6 @@ func (s *UserServices) EditUser(ctx context.Context, id int, userReq entity.User
 		return entity.Users{}, err
 	}
 
-	// user.Name = userReq.Name
-	// user.Email = userReq.Email
-	// Update other fields as necessary
-
 	err = tx.WithContext(ctx).Save(&user).Error
 	if err != nil {
 		return entity.Users{}, err

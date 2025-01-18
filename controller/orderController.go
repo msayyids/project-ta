@@ -1,9 +1,9 @@
 package controller
 
+import "C"
 import (
 	"github.com/midtrans/midtrans-go/snap"
 	"net/http"
-	"os"
 	"project-ta/entity"
 	"project-ta/helper"
 	"project-ta/service"
@@ -12,19 +12,18 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/julienschmidt/httprouter"
 	"github.com/midtrans/midtrans-go"
-	"github.com/midtrans/midtrans-go/coreapi"
 )
 
 type OrderController struct {
 	Service service.OrderServiceInj
-	C       coreapi.Client
+	S       snap.Client
 	V       validator.Validate
 }
 
-func NewOrderController(service service.OrderServiceInj, c coreapi.Client, v validator.Validate) *OrderController {
+func NewOrderController(service service.OrderServiceInj, s snap.Client, v validator.Validate) *OrderController {
 	return &OrderController{
 		Service: service,
-		C:       c,
+		S:       s,
 		V:       v,
 	}
 }
@@ -50,13 +49,12 @@ func (oc *OrderController) CreateOrderCash(w http.ResponseWriter, r *http.Reques
 }
 
 func (oc *OrderController) CreateOrderCashless(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	serverKey := os.Getenv("MIDTRANS_SERVER_KEY")
-	midtrans.ServerKey = serverKey
-	midtrans.Environment = midtrans.Sandbox
-
-	// Inisialisasi dan kembalikan client
-	C := snap.Client{}
-	C.New(serverKey, midtrans.Sandbox)
+	//serverKey := os.Getenv("MIDTRANS_SERVER_KEY")
+	//midtrans.ServerKey = serverKey
+	//midtrans.Environment = midtrans.Sandbox
+	//
+	//C := snap.Client{}
+	//C.New(serverKey, midtrans.Sandbox)
 	var order entity.OrderReq
 
 	helper.RequestBody(r, &order)
@@ -73,18 +71,21 @@ func (oc *OrderController) CreateOrderCashless(w http.ResponseWriter, r *http.Re
 		TransactionDetails: midtrans.TransactionDetails{
 			OrderID:  strId,
 			GrossAmt: int64(newOrder.Total),
+		}, CustomerDetail: &midtrans.CustomerDetails{
+			FName: newOrder.NamaPelanggan,
+			Phone: newOrder.NoTeleponPelanggan,
 		},
 	}
 
-	coreApiRes, _ := C.CreateTransaction(chargeReq)
+	snapRes, _ := oc.S.CreateTransaction(chargeReq)
 
-	err = oc.Service.UpdatePaymentURL(r.Context(), newOrder.ID, coreApiRes.RedirectURL)
+	err = oc.Service.UpdatePaymentURL(r.Context(), newOrder.ID, snapRes.RedirectURL)
 	if err != nil {
 		http.Error(w, "Failed to update payment URL and QR data", http.StatusInternalServerError)
 		return
 	}
 
-	newOrder.Payment_url = coreApiRes.RedirectURL
+	newOrder.Payment_url = snapRes.RedirectURL
 	response := entity.WebResponse{
 		Code:    http.StatusCreated,
 		Message: "Order Created Successfully",
@@ -155,5 +156,29 @@ func (oc *OrderController) UpdateOrder(w http.ResponseWriter, r *http.Request, p
 	}
 
 	helper.ResponseBody(w, response, http.StatusOK)
+
+}
+
+func (oc *OrderController) FindByStatus(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+
+	status := ps.ByName("status")
+
+	order, err := oc.Service.FindByStatus(r.Context(), status)
+	if err != nil {
+		helper.ResponseBody(w,
+			entity.WebResponse{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+				Data:    nil,
+			}, http.StatusInternalServerError)
+	}
+
+	respose := entity.WebResponse{
+		Code:    http.StatusOK,
+		Message: "OK",
+		Data:    order,
+	}
+
+	helper.ResponseBody(w, respose, http.StatusOK)
 
 }
