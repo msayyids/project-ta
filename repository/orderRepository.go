@@ -141,7 +141,7 @@ func (r *OrderRepository) DeleteOrder(ctx context.Context, id int, db *gorm.DB) 
 
 func (r *OrderRepository) FindByStatus(ctx context.Context, status string, db *gorm.DB) ([]entity.Order, error) {
 	var orders []entity.Order
-	if err := db.WithContext(ctx).Find(&orders).Error; err != nil {
+	if err := db.WithContext(ctx).Where("status=?", status).Find(&orders).Error; err != nil {
 		return nil, err
 	}
 	return orders, nil

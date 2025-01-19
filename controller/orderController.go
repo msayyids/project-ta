@@ -182,9 +182,20 @@ func (oc *OrderController) FindByStatus(w http.ResponseWriter, r *http.Request, 
 		helper.ResponseBody(w,
 			entity.WebResponse{
 				Code:    http.StatusInternalServerError,
-				Message: err.Error(),
+				Message: "internal server error",
 				Data:    nil,
 			}, http.StatusInternalServerError)
+		return
+	}
+
+	if len(order) == 0 {
+		helper.ResponseBody(w,
+			entity.WebResponse{
+				Code:    http.StatusOK,
+				Message: "data not found",
+				Data:    []entity.Order{},
+			}, http.StatusOK)
+		return
 	}
 
 	respose := entity.WebResponse{
