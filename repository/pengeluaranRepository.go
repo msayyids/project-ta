@@ -90,10 +90,35 @@ func (r *pengeluaranRepository) DeletePengeluaran(ctx context.Context, id int, d
 
 func (r *pengeluaranRepository) UpdatePengeluaran(ctx context.Context, id int, pengeluaran entity.PengeluaranRequest, db *gorm.DB) (entity.Pengeluaran, error) {
 	var updatedPengeluaran entity.Pengeluaran
-	// Update menggunakan GORM
-	err := db.WithContext(ctx).Model(&updatedPengeluaran).Where("id = ?", id).Updates(pengeluaran).Error
+
+	// Cek jika ID ada dalam database
+	err := db.WithContext(ctx).First(&updatedPengeluaran, id).Error
 	if err != nil {
-		return entity.Pengeluaran{}, fmt.Errorf("error updating pengeluaran: %w", err)
+		return entity.Pengeluaran{}, fmt.Errorf("data pengeluaran dengan ID %d tidak ditemukan: %w", id, err)
 	}
+
+	// Update fields only if they are not empty
+	if pengeluaran.Nama_pengeluaran != "" {
+		updatedPengeluaran.Nama_pengeluaran = pengeluaran.Nama_pengeluaran
+	}
+	if pengeluaran.Keterangan != "" {
+		updatedPengeluaran.Keterangan = pengeluaran.Keterangan
+	}
+	if pengeluaran.Total != 0 {
+		updatedPengeluaran.Total = pengeluaran.Total
+	}
+	if pengeluaran.Bukti_pengeluaran != "" {
+		updatedPengeluaran.Bukti_pengeluaran = pengeluaran.Bukti_pengeluaran
+	}
+	if pengeluaran.Tipe_pengeluaran != "" {
+		updatedPengeluaran.Tipe_pengeluaran = pengeluaran.Tipe_pengeluaran
+	}
+
+	// Update pengeluaran di database
+	err = db.WithContext(ctx).Save(&updatedPengeluaran).Error
+	if err != nil {
+		return entity.Pengeluaran{}, fmt.Errorf("error saat mengupdate pengeluaran: %w", err)
+	}
+
 	return updatedPengeluaran, nil
 }

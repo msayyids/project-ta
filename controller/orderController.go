@@ -150,6 +150,7 @@ func (oc *OrderController) UpdateOrder(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
+	// Mengambil data dari request body
 	var order entity.OrderReq
 	helper.RequestBody(r, &order)
 
@@ -157,7 +158,7 @@ func (oc *OrderController) UpdateOrder(w http.ResponseWriter, r *http.Request, p
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
 			Code:    http.StatusInternalServerError,
-			Message: "internal server error",
+			Message: "Internal server error",
 			Data:    nil,
 		}, http.StatusInternalServerError)
 		return
@@ -165,19 +166,18 @@ func (oc *OrderController) UpdateOrder(w http.ResponseWriter, r *http.Request, p
 
 	response := entity.WebResponse{
 		Code:    http.StatusOK,
-		Message: "Order Updated Successfully",
+		Message: "Order updated successfully",
 		Data:    updatedOrder,
 	}
 
 	helper.ResponseBody(w, response, http.StatusOK)
-
 }
 
 func (oc *OrderController) FindByStatus(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	status := ps.ByName("status")
 
-	order, err := oc.Service.FindByStatus(r.Context(), status)
+	_, err := oc.Service.FindByStatus(r.Context(), status)
 	if err != nil {
 		helper.ResponseBody(w,
 			entity.WebResponse{
@@ -188,20 +188,10 @@ func (oc *OrderController) FindByStatus(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	if len(order) == 0 {
-		helper.ResponseBody(w,
-			entity.WebResponse{
-				Code:    http.StatusOK,
-				Message: "data not found",
-				Data:    []entity.Order{},
-			}, http.StatusOK)
-		return
-	}
-
 	respose := entity.WebResponse{
 		Code:    http.StatusOK,
 		Message: "OK",
-		Data:    order,
+		Data:    "data berhasil diubah",
 	}
 
 	helper.ResponseBody(w, respose, http.StatusOK)

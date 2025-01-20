@@ -37,19 +37,31 @@ func (l LayananRepository) AddLayanan(ctx context.Context, LayananReq entity.Lay
 }
 
 func (l LayananRepository) EditById(ctx context.Context, id int, db *gorm.DB, layanan entity.LayananRequest) (entity.Layanan, error) {
-	updatedLayanan := entity.Layanan{
-		ID:        id,
-		Nama:      layanan.Nama,
-		Deskripsi: layanan.Desksripsi,
-		Harga:     layanan.Harga,
+	var existingLayanan entity.Layanan
+
+	// Cari layanan berdasarkan ID
+	if err := db.WithContext(ctx).First(&existingLayanan, id).Error; err != nil {
+		return entity.Layanan{}, err
 	}
 
-	err := db.Save(&updatedLayanan).Error
+	// Update kolom-kolom yang disertakan dalam request
+	if layanan.Nama != "" {
+		existingLayanan.Nama = layanan.Nama
+	}
+	if layanan.Desksripsi != "" {
+		existingLayanan.Deskripsi = layanan.Desksripsi
+	}
+	if layanan.Harga != 0 {
+		existingLayanan.Harga = layanan.Harga
+	}
+
+	// Simpan perubahan ke dalam database
+	err := db.WithContext(ctx).Save(&existingLayanan).Error
 	if err != nil {
 		return entity.Layanan{}, err
 	}
 
-	return updatedLayanan, nil
+	return existingLayanan, nil
 }
 
 func (l LayananRepository) DeleteById(ctx context.Context, id int, db *gorm.DB) error {

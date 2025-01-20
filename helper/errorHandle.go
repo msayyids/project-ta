@@ -68,11 +68,10 @@ func ErrorHandler(w http.ResponseWriter, statuscode int, message string) {
 }
 
 // PanicHandlerWrapper adalah wrapper untuk menangani panic dan memanggil ErrorHandler
-func PanicHandlerWrapper(w http.ResponseWriter, r *http.Request, err interface{}) {
+func PanicHandlerWrapper(w http.ResponseWriter, _ *http.Request, err interface{}) {
 	// utntuk debug
 	fmt.Printf("PANIC: %v\n", err)
 	fmt.Printf("Stack Trace:\n%s\n", debug.Stack())
 
-	// Panggil ErrorHandler dengan status InternalServerError dan pesan error
 	ErrorHandler(w, http.StatusInternalServerError, fmt.Sprintf("An unexpected error occurred: %v", err))
 }

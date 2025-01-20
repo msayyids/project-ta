@@ -66,7 +66,6 @@ func (ur *UserRepositories) EditUser(ctx context.Context, id int, userReq entity
 	user.Nama_belakang = userReq.Nama_belakang
 	user.Role = userReq.Role
 	user.Email = userReq.Email
-	user.Password = userReq.Password
 	user.No_telepon = userReq.No_telepon
 	user.Alamat = userReq.Alamat
 	user.Gaji = userReq.Gaji

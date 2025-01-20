@@ -17,6 +17,7 @@ func NewRouter() *httprouter.Router {
 
 	validate := validator.New()
 	db := config.ConnectDb()
+	cld := config.InitializeCloudinary()
 
 	coreAPIClient := config.SetupCoreAPIClient()
 	snapAPIClient := config.SetupSnapAPIClient()
@@ -39,7 +40,7 @@ func NewRouter() *httprouter.Router {
 
 	pengeluaranRepo := repository.NewPengeluaranRepository()
 	pengeluranService := service.NewPengeluaranService(db, pengeluaranRepo)
-	pengeluaranController := controller.NewPengeluaranController(pengeluranService)
+	pengeluaranController := controller.NewPengeluaranController(pengeluranService, cld)
 
 	keuntunganRepo := repository.NewKeuntunganRepository()
 	keuntunganService := service.NewKeuntunganService(db, keuntunganRepo)

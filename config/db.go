@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"gorm.io/gorm/logger"
 	"log"
 	"os"
 
@@ -27,10 +28,9 @@ func ConnectDb() *gorm.DB {
 	dsn := fmt.Sprintf("host=%v user=%v password=%v dbname=%v port=%v sslmode=%v",
 		dbHost, dbUser, dbPassword, dbName, dbPort, dbSSLMode)
 
-	db, err := gorm.Open(postgres.Open(dsn))
-	//, &gorm.Config{
-	//	Logger: logger.Default.LogMode(logger.Info),
-	//})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
 	if err != nil {
 		log.Panic("Failed to connect to database: ", err)
 	}

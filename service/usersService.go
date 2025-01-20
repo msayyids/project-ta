@@ -104,22 +104,16 @@ func (s *UserServices) DeleteUser(ctx context.Context, id int) error {
 }
 
 func (s *UserServices) EditUser(ctx context.Context, id int, userReq entity.UserRequest) (entity.Users, error) {
-	var user entity.Users
 	tx := s.DB.Begin()
 
 	defer helper.CommitOrRollback(tx)
 
-	err := tx.WithContext(ctx).First(&user, id).Error
+	editetuser, err := s.UserRepo.EditUser(ctx, id, userReq, tx)
 	if err != nil {
 		return entity.Users{}, err
 	}
 
-	err = tx.WithContext(ctx).Save(&user).Error
-	if err != nil {
-		return entity.Users{}, err
-	}
-
-	return user, nil
+	return editetuser, nil
 }
 
 func (s *UserServices) FindAllUsers(ctx context.Context) ([]entity.Users, error) {

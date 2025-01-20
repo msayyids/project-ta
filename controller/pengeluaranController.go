@@ -1,9 +1,10 @@
 package controller
 
 import (
+	"github.com/cloudinary/cloudinary-go/v2"
 	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
 	"net/http"
-	"project-ta/config"
+	"os"
 	"project-ta/entity"
 	"project-ta/helper"
 	"project-ta/service"
@@ -16,6 +17,7 @@ import (
 
 type PengeluaranController struct {
 	P service.PengeluaranServiceInj
+	C *cloudinary.Cloudinary
 }
 
 type PengeluaranControllerInj interface {
@@ -27,29 +29,39 @@ type PengeluaranControllerInj interface {
 	FindPengeluaranByDate(w http.ResponseWriter, r *http.Request, param httprouter.Params)
 }
 
-func NewPengeluaranController(p service.PengeluaranServiceInj) PengeluaranControllerInj {
+func NewPengeluaranController(p service.PengeluaranServiceInj, c *cloudinary.Cloudinary) PengeluaranController {
 	return PengeluaranController{
 		P: p,
+		C: c,
 	}
 }
 
-func (pc PengeluaranController) CreatePengeluaran(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
+func (pc PengeluaranController) CreatePengeluaran(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	var req entity.PengeluaranRequest
 
-	cld := config.InitializeCloudinary()
+	helper.RequestBody(r, &req)
 
-	file, _, err := r.FormFile("bukti_pengeluaran")
-	if err != nil {
+	validate := validator.New()
+	if err := validate.Struct(&req); err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
 			Code:    http.StatusBadRequest,
 			Message: "BAD REQUEST",
-			Data:    "Bukti_pengeluaran is required and must be a valid file",
+			Data:    "INVALID INPUT",
 		}, http.StatusBadRequest)
 		return
 	}
-	defer file.Close()
 
-	// Upload file to Cloudinary
-	resp, err := cld.Upload.Upload(r.Context(), file, uploader.UploadParams{})
+	fileBytes, err := os.Open(req.Bukti_pengeluaran)
+	if err != nil {
+		helper.ResponseBody(w, entity.WebResponse{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+			Data:    nil,
+		}, http.StatusBadRequest)
+		return
+	}
+
+	resp, err := pc.C.Upload.Upload(r.Context(), fileBytes, uploader.UploadParams{})
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
 			Code:    http.StatusInternalServerError,
@@ -59,42 +71,10 @@ func (pc PengeluaranController) CreatePengeluaran(w http.ResponseWriter, r *http
 		return
 	}
 
-	// Convert form values
-	usersID, err := strconv.Atoi(r.FormValue("users_id"))
-	if err != nil {
-		http.Error(w, "Invalid users_id", http.StatusBadRequest)
-		return
-	}
-
-	total, err := strconv.Atoi(r.FormValue("total"))
-	if err != nil {
-		http.Error(w, "Invalid total", http.StatusBadRequest)
-		return
-	}
-
-	// Create request object
-	request := entity.PengeluaranRequest{
-		Nama_pengeluaran:  r.FormValue("nama_pengeluaran"),
-		Keterangan:        r.FormValue("keterangan"),
-		Users_id:          usersID,
-		Total:             total,
-		Bukti_pengeluaran: resp.SecureURL, // Use SecureURL for HTTPS links
-		Tipe_pengeluaran:  r.FormValue("tipe_pengeluaran"),
-	}
-
-	// Validate request object
-	validate := validator.New()
-	if err := validate.Struct(&request); err != nil {
-		helper.ResponseBody(w, entity.WebResponse{
-			Code:    http.StatusBadRequest,
-			Message: "BAD REQUEST",
-			Data:    err.Error(),
-		}, http.StatusBadRequest)
-		return
-	}
+	req.Bukti_pengeluaran = resp.SecureURL
 
 	// Create Pengeluaran
-	newPengeluaran, err := pc.P.CreatePengeluaran(r.Context(), request)
+	newPengeluaran, err := pc.P.CreatePengeluaran(r.Context(), req)
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
 			Code:    http.StatusInternalServerError,
@@ -113,7 +93,7 @@ func (pc PengeluaranController) CreatePengeluaran(w http.ResponseWriter, r *http
 	helper.ResponseBody(w, response, http.StatusCreated)
 }
 
-func (pc PengeluaranController) GetPengeluaran(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
+func (pc PengeluaranController) GetPengeluaran(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	allPengeluaran, err := pc.P.FindAllPengeluaran(r.Context())
 	if err != nil {
@@ -183,32 +163,66 @@ func (pc PengeluaranController) DeletePengeluaran(w http.ResponseWriter, r *http
 	helper.ResponseBody(w, response, http.StatusOK)
 }
 
-func (pc PengeluaranController) UpdatePengeluaran(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
+func (pc *PengeluaranController) UpdatePengeluaran(w http.ResponseWriter, r *http.Request, param httprouter.Params) {
 	var requestBody entity.PengeluaranRequest
 
 	helper.RequestBody(r, &requestBody)
 
+	// Ambil ID dari parameter URL
 	id := param.ByName("id")
-	idInt, _ := strconv.Atoi(id)
+	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		helper.ResponseBody(w, entity.WebResponse{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid ID parameter",
+			Data:    nil,
+		}, http.StatusBadRequest)
+		return
+	}
 
+	if requestBody.Bukti_pengeluaran != "" {
+		filePath := requestBody.Bukti_pengeluaran
+		fileBytes, err := os.Open(filePath)
+		if err != nil {
+			helper.ResponseBody(w, entity.WebResponse{
+				Code:    http.StatusBadRequest,
+				Message: err.Error(),
+				Data:    nil,
+			}, http.StatusBadRequest)
+			return
+		}
+
+		uploadResult, err := pc.C.Upload.Upload(r.Context(), fileBytes, uploader.UploadParams{})
+		if err != nil {
+			helper.ResponseBody(w, entity.WebResponse{
+				Code:    http.StatusBadRequest,
+				Message: err.Error(),
+				Data:    nil,
+			}, http.StatusBadRequest)
+			return
+		}
+		requestBody.Bukti_pengeluaran = uploadResult.SecureURL
+	}
+
+	// Panggil service untuk memperbarui pengeluaran
 	editedPengeluaran, err := pc.P.EditPengeluaran(r.Context(), requestBody, idInt)
 	if err != nil {
 		helper.ResponseBody(w, entity.WebResponse{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal Server Error",
-			Data:    "Failed to create user",
+			Data:    err.Error(),
 		}, http.StatusInternalServerError)
 		return
 	}
 
+	// Kirim response sukses
 	response := entity.WebResponse{
 		Code:    http.StatusOK,
-		Message: "succses edit data pengeluaran",
+		Message: "Success edit pengeluaran",
 		Data:    editedPengeluaran,
 	}
 
 	helper.ResponseBody(w, response, http.StatusOK)
-
 }
 
 func (pc PengeluaranController) FindPengeluaranByDate(w http.ResponseWriter, r *http.Request, param httprouter.Params) {

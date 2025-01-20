@@ -109,22 +109,41 @@ func (r *OrderRepository) FindAll(ctx context.Context, db *gorm.DB) ([]entity.Or
 }
 
 // UpdateOrder to update existing order by ID
-func (r *OrderRepository) UpdateOrder(ctx context.Context, id int, order entity.OrderReq, db *gorm.DB) (entity.Order, error) {
+func (r *OrderRepository) UpdateOrder(ctx context.Context, id int, request entity.OrderReq, db *gorm.DB) (entity.Order, error) {
 	var existingOrder entity.Order
-	if err := db.WithContext(ctx).First(&existingOrder, id).Error; err != nil {
+
+	// Cari order berdasarkan ID dan PaymentStatus = "Cash"
+	if err := db.WithContext(ctx).Where("id = ? AND payment_type = ?", id, "CASH").First(&existingOrder).Error; err != nil {
 		return entity.Order{}, err
 	}
 
-	// Update the fields
-	existingOrder.NamaPelanggan = order.NamaPelanggan
-	existingOrder.NoTeleponPelanggan = order.NoTeleponPelanggan
-	existingOrder.LayananID = order.LayananID
-	existingOrder.UserID = order.UserID
-	existingOrder.Jumlah = order.Jumlah
-	existingOrder.Total = order.Total
-	existingOrder.Status = order.Status
-	existingOrder.PaymentType = order.PaymentType
+	// Update kolom sesuai dengan request, hanya kolom yang tidak kosong atau ada perubahan
+	if request.NamaPelanggan != "" {
+		existingOrder.NamaPelanggan = request.NamaPelanggan
+	}
+	if request.NoTeleponPelanggan != "" {
+		existingOrder.NoTeleponPelanggan = request.NoTeleponPelanggan
+	}
+	if request.LayananID != 0 {
+		existingOrder.LayananID = request.LayananID
+	}
+	if request.UserID != 0 {
+		existingOrder.UserID = request.UserID
+	}
+	if request.Jumlah != 0 {
+		existingOrder.Jumlah = request.Jumlah
+	}
+	if request.Total != 0 {
+		existingOrder.Total = request.Total
+	}
+	if request.Status != "" {
+		existingOrder.Status = request.Status
+	}
+	if request.PaymentType != "" {
+		existingOrder.PaymentType = request.PaymentType
+	}
 
+	// Simpan perubahan
 	if err := db.WithContext(ctx).Save(&existingOrder).Error; err != nil {
 		return entity.Order{}, err
 	}

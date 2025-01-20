@@ -62,6 +62,7 @@ func (pr *PengeluaranService) EditPengeluaran(ctx context.Context, pengeluaranRe
 	tx := pr.DB.Begin()
 	defer helper.CommitOrRollback(tx)
 
+	// Panggil repository untuk update pengeluaran
 	updatedPengeluaran, err := pr.PengeluaranRepo.UpdatePengeluaran(ctx, id, pengeluaranReq, tx)
 	if err != nil {
 		return entity.Pengeluaran{}, fmt.Errorf("error saat mengedit pengeluaran: %w", err)
